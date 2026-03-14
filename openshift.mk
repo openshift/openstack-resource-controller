@@ -35,6 +35,7 @@ $(manifests_dir):
 merge-bot: full-vendoring generate generate-openshift ## Runs targets that help merge-bot to rebase downstream ORC.
 
 .PHONY: full-vendoring ## Runs commands that complete vendoring tasks for downstream ORC.
+full-vendoring:
 	go mod tidy && go mod vendor
 
 .PHONY: ALWAYS
