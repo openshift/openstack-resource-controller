@@ -1,0 +1,7 @@
+attributes:
+  type: infrastructure
+  version: v0.8.0
+installOrder: 10
+name: openstack-resource-controller
+ocpPlatform: OpenStack
+selfImageRef: registry.ci.openshift.org/openshift:openstack-resource-controller
