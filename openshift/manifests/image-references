@@ -1,8 +1,0 @@
-apiVersion: image.openshift.io/v1
-kind: ImageStream
-spec:
-  tags:
-  - name: openstack-resource-controller
-    from:
-      kind: DockerImage
-      name: registry.ci.openshift.org/openshift:openstack-resource-controller
