@@ -1,0 +1,30 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: RouterInterface
+metadata:
+  name: routerinterface-dependency-no-router
+status:
+  conditions:
+    - type: Available
+      message: Waiting for Router/routerinterface-dependency-pending to be created
+      status: "False"
+      reason: Progressing
+    - type: Progressing
+      message: Waiting for Router/routerinterface-dependency-pending to be created
+      status: "True"
+      reason: Progressing
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: RouterInterface
+metadata:
+  name: routerinterface-dependency-no-subnet
+status:
+  conditions:
+    - type: Available
+      message: Waiting for Subnet/routerinterface-dependency-pending to be created
+      status: "False"
+      reason: Progressing
+    - type: Progressing
+      message: Waiting for Subnet/routerinterface-dependency-pending to be created
+      status: "True"
+      reason: Progressing

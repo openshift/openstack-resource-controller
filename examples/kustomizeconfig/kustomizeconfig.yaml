@@ -1,5 +1,0 @@
-nameReference:
-- kind: Secret
-  fieldSpecs:
-  - path: spec/cloudCredentialsRef/secretName
-    kind: Image

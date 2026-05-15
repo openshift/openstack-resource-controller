@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,62 @@ limitations under the License.
 
 package v1alpha1
 
+// AddressScopeListerExpansion allows custom methods to be added to
+// AddressScopeLister.
+type AddressScopeListerExpansion interface{}
+
+// AddressScopeNamespaceListerExpansion allows custom methods to be added to
+// AddressScopeNamespaceLister.
+type AddressScopeNamespaceListerExpansion interface{}
+
+// ApplicationCredentialListerExpansion allows custom methods to be added to
+// ApplicationCredentialLister.
+type ApplicationCredentialListerExpansion interface{}
+
+// ApplicationCredentialNamespaceListerExpansion allows custom methods to be added to
+// ApplicationCredentialNamespaceLister.
+type ApplicationCredentialNamespaceListerExpansion interface{}
+
+// DomainListerExpansion allows custom methods to be added to
+// DomainLister.
+type DomainListerExpansion interface{}
+
+// DomainNamespaceListerExpansion allows custom methods to be added to
+// DomainNamespaceLister.
+type DomainNamespaceListerExpansion interface{}
+
+// EndpointListerExpansion allows custom methods to be added to
+// EndpointLister.
+type EndpointListerExpansion interface{}
+
+// EndpointNamespaceListerExpansion allows custom methods to be added to
+// EndpointNamespaceLister.
+type EndpointNamespaceListerExpansion interface{}
+
+// FlavorListerExpansion allows custom methods to be added to
+// FlavorLister.
+type FlavorListerExpansion interface{}
+
+// FlavorNamespaceListerExpansion allows custom methods to be added to
+// FlavorNamespaceLister.
+type FlavorNamespaceListerExpansion interface{}
+
+// FloatingIPListerExpansion allows custom methods to be added to
+// FloatingIPLister.
+type FloatingIPListerExpansion interface{}
+
+// FloatingIPNamespaceListerExpansion allows custom methods to be added to
+// FloatingIPNamespaceLister.
+type FloatingIPNamespaceListerExpansion interface{}
+
+// GroupListerExpansion allows custom methods to be added to
+// GroupLister.
+type GroupListerExpansion interface{}
+
+// GroupNamespaceListerExpansion allows custom methods to be added to
+// GroupNamespaceLister.
+type GroupNamespaceListerExpansion interface{}
+
 // ImageListerExpansion allows custom methods to be added to
 // ImageLister.
 type ImageListerExpansion interface{}
@@ -25,3 +81,131 @@ type ImageListerExpansion interface{}
 // ImageNamespaceListerExpansion allows custom methods to be added to
 // ImageNamespaceLister.
 type ImageNamespaceListerExpansion interface{}
+
+// KeyPairListerExpansion allows custom methods to be added to
+// KeyPairLister.
+type KeyPairListerExpansion interface{}
+
+// KeyPairNamespaceListerExpansion allows custom methods to be added to
+// KeyPairNamespaceLister.
+type KeyPairNamespaceListerExpansion interface{}
+
+// NetworkListerExpansion allows custom methods to be added to
+// NetworkLister.
+type NetworkListerExpansion interface{}
+
+// NetworkNamespaceListerExpansion allows custom methods to be added to
+// NetworkNamespaceLister.
+type NetworkNamespaceListerExpansion interface{}
+
+// PortListerExpansion allows custom methods to be added to
+// PortLister.
+type PortListerExpansion interface{}
+
+// PortNamespaceListerExpansion allows custom methods to be added to
+// PortNamespaceLister.
+type PortNamespaceListerExpansion interface{}
+
+// ProjectListerExpansion allows custom methods to be added to
+// ProjectLister.
+type ProjectListerExpansion interface{}
+
+// ProjectNamespaceListerExpansion allows custom methods to be added to
+// ProjectNamespaceLister.
+type ProjectNamespaceListerExpansion interface{}
+
+// RoleListerExpansion allows custom methods to be added to
+// RoleLister.
+type RoleListerExpansion interface{}
+
+// RoleNamespaceListerExpansion allows custom methods to be added to
+// RoleNamespaceLister.
+type RoleNamespaceListerExpansion interface{}
+
+// RouterListerExpansion allows custom methods to be added to
+// RouterLister.
+type RouterListerExpansion interface{}
+
+// RouterNamespaceListerExpansion allows custom methods to be added to
+// RouterNamespaceLister.
+type RouterNamespaceListerExpansion interface{}
+
+// RouterInterfaceListerExpansion allows custom methods to be added to
+// RouterInterfaceLister.
+type RouterInterfaceListerExpansion interface{}
+
+// RouterInterfaceNamespaceListerExpansion allows custom methods to be added to
+// RouterInterfaceNamespaceLister.
+type RouterInterfaceNamespaceListerExpansion interface{}
+
+// SecurityGroupListerExpansion allows custom methods to be added to
+// SecurityGroupLister.
+type SecurityGroupListerExpansion interface{}
+
+// SecurityGroupNamespaceListerExpansion allows custom methods to be added to
+// SecurityGroupNamespaceLister.
+type SecurityGroupNamespaceListerExpansion interface{}
+
+// ServerListerExpansion allows custom methods to be added to
+// ServerLister.
+type ServerListerExpansion interface{}
+
+// ServerNamespaceListerExpansion allows custom methods to be added to
+// ServerNamespaceLister.
+type ServerNamespaceListerExpansion interface{}
+
+// ServerGroupListerExpansion allows custom methods to be added to
+// ServerGroupLister.
+type ServerGroupListerExpansion interface{}
+
+// ServerGroupNamespaceListerExpansion allows custom methods to be added to
+// ServerGroupNamespaceLister.
+type ServerGroupNamespaceListerExpansion interface{}
+
+// ServiceListerExpansion allows custom methods to be added to
+// ServiceLister.
+type ServiceListerExpansion interface{}
+
+// ServiceNamespaceListerExpansion allows custom methods to be added to
+// ServiceNamespaceLister.
+type ServiceNamespaceListerExpansion interface{}
+
+// SubnetListerExpansion allows custom methods to be added to
+// SubnetLister.
+type SubnetListerExpansion interface{}
+
+// SubnetNamespaceListerExpansion allows custom methods to be added to
+// SubnetNamespaceLister.
+type SubnetNamespaceListerExpansion interface{}
+
+// TrunkListerExpansion allows custom methods to be added to
+// TrunkLister.
+type TrunkListerExpansion interface{}
+
+// TrunkNamespaceListerExpansion allows custom methods to be added to
+// TrunkNamespaceLister.
+type TrunkNamespaceListerExpansion interface{}
+
+// UserListerExpansion allows custom methods to be added to
+// UserLister.
+type UserListerExpansion interface{}
+
+// UserNamespaceListerExpansion allows custom methods to be added to
+// UserNamespaceLister.
+type UserNamespaceListerExpansion interface{}
+
+// VolumeListerExpansion allows custom methods to be added to
+// VolumeLister.
+type VolumeListerExpansion interface{}
+
+// VolumeNamespaceListerExpansion allows custom methods to be added to
+// VolumeNamespaceLister.
+type VolumeNamespaceListerExpansion interface{}
+
+// VolumeTypeListerExpansion allows custom methods to be added to
+// VolumeTypeLister.
+type VolumeTypeListerExpansion interface{}
+
+// VolumeTypeNamespaceListerExpansion allows custom methods to be added to
+// VolumeTypeNamespaceLister.
+type VolumeTypeNamespaceListerExpansion interface{}

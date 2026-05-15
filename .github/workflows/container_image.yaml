@@ -3,7 +3,7 @@ name: container image
 on:
   push:
     branches:
-    - release-1.0
+    - release-2.0
 
 permissions:
   contents: read
@@ -19,17 +19,21 @@ jobs:
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # tag=v6.0.2
       with:
+        # Required for git describe to generate correct output for populating
+        # build variables
+        fetch-depth: 0
+        fetch-tags: true
         persist-credentials: false
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # tag=v4.0.0
 
     - name: Build and push images
       run: |
         docker login -u="${{ secrets.QUAY_USERNAME }}" -p="${{ secrets.QUAY_TOKEN }}" quay.io # zizmor: ignore[secrets-outside-env]
-
-        make docker-build IMG=${{ env.image_tag_branch }} && \
-        make docker-build IMG=${{ env.image_tag_commit }}
-
-        make docker-push IMG=${{ env.image_tag_branch }} && \
-        make docker-push IMG=${{ env.image_tag_commit }}
+        # Ensure we source identical build arguments for both builds
+        source hack/version.sh && version::get_git_vars && version::get_build_date && \
+          make docker-buildx IMG=${{ env.image_tag_branch }} && \
+          make docker-buildx IMG=${{ env.image_tag_commit }}
 
     - name: Set expiration on commit image
       env:

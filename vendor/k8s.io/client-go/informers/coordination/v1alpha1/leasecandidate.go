@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	coordinationv1alpha1 "k8s.io/api/coordination/v1alpha1"
+	v2apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
+	clientset "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset"
+	internalinterfaces "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/informers/externalversions/internalinterfaces"
+	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/listers/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +39,7 @@ import (
 // LeaseCandidates.
 type LeaseCandidateInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.LeaseCandidateLister
+	Lister() apiv1alpha1.RouterInterfaceLister
 }
 
 type leaseCandidateInformer struct {
@@ -62,16 +65,28 @@ func NewFilteredLeaseCandidateInformer(client kubernetes.Interface, namespace st
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CoordinationV1alpha1().LeaseCandidates(namespace).List(context.TODO(), options)
+				return client.OpenstackV1alpha1().RouterInterfaces(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CoordinationV1alpha1().LeaseCandidates(namespace).Watch(context.TODO(), options)
+				return client.OpenstackV1alpha1().RouterInterfaces(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.OpenstackV1alpha1().RouterInterfaces(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.OpenstackV1alpha1().RouterInterfaces(namespace).Watch(ctx, options)
 			},
 		},
-		&coordinationv1alpha1.LeaseCandidate{},
+		&v2apiv1alpha1.RouterInterface{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,10 +96,10 @@ func (f *leaseCandidateInformer) defaultInformer(client kubernetes.Interface, re
 	return NewFilteredLeaseCandidateInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *leaseCandidateInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&coordinationv1alpha1.LeaseCandidate{}, f.defaultInformer)
+func (f *routerInterfaceInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&v2apiv1alpha1.RouterInterface{}, f.defaultInformer)
 }
 
-func (f *leaseCandidateInformer) Lister() v1alpha1.LeaseCandidateLister {
-	return v1alpha1.NewLeaseCandidateLister(f.Informer().GetIndexer())
+func (f *routerInterfaceInformer) Lister() apiv1alpha1.RouterInterfaceLister {
+	return apiv1alpha1.NewRouterInterfaceLister(f.Informer().GetIndexer())
 }

@@ -1,0 +1,13 @@
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: ServerGroup
+metadata:
+  name: servergroup-sample
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    policy: anti-affinity
+    rules:
+      maxServerPerHost: 2

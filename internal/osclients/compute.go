@@ -19,6 +19,7 @@ package osclients
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
@@ -27,39 +28,51 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servergroups"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
-	"github.com/gophercloud/gophercloud/v2/pagination"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/tags"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/volumeattach"
 	"github.com/gophercloud/utils/v2/openstack/clientconfig"
 )
 
 /*
-NovaMinimumMicroversion is the minimum Nova microversion supported by CAPO
-2.60 corresponds to OpenStack Queens
+NovaMinimumMicroversion is the minimum Nova microversion supported by CAPO and ORC.
+2.71 corresponds to OpenStack Stein
 
 For the canonical description of Nova microversions, see
 https://docs.openstack.org/nova/latest/reference/api-microversion-history.html
 
 CAPO uses server tags, which were added in microversion 2.52.
 CAPO supports multiattach volume types, which were added in microversion 2.60.
+ORC supports server groups by specifying Policy/Rules instead of Policies, which were added in microversion 2.64.
+ORC requires the use of microversion 2.71 to support ServerGroups field in Server response.
 */
-const NovaMinimumMicroversion = "2.60"
+const NovaMinimumMicroversion = "2.71"
 
 type ComputeClient interface {
-	ListAvailabilityZones() ([]availabilityzones.AvailabilityZone, error)
-
 	CreateFlavor(ctx context.Context, opts flavors.CreateOptsBuilder) (*flavors.Flavor, error)
 	GetFlavor(ctx context.Context, id string) (*flavors.Flavor, error)
 	DeleteFlavor(ctx context.Context, id string) error
-	ListFlavors(ctx context.Context, listOpts flavors.ListOptsBuilder) <-chan (Result[*flavors.Flavor])
+	ListFlavors(ctx context.Context, listOpts flavors.ListOptsBuilder) iter.Seq2[*flavors.Flavor, error]
 
 	CreateServer(ctx context.Context, createOpts servers.CreateOptsBuilder, schedulerHints servers.SchedulerHintOptsBuilder) (*servers.Server, error)
 	DeleteServer(ctx context.Context, serverID string) error
 	GetServer(ctx context.Context, serverID string) (*servers.Server, error)
-	ListServers(ctx context.Context, listOpts servers.ListOptsBuilder) <-chan (Result[*servers.Server])
+	ListServers(ctx context.Context, listOpts servers.ListOptsBuilder) iter.Seq2[*servers.Server, error]
+	UpdateServer(ctx context.Context, id string, opts servers.UpdateOptsBuilder) (*servers.Server, error)
 
-	ListAttachedInterfaces(serverID string) ([]attachinterfaces.Interface, error)
-	DeleteAttachedInterface(serverID, portID string) error
+	CreateServerGroup(ctx context.Context, createOpts servergroups.CreateOptsBuilder) (*servergroups.ServerGroup, error)
+	DeleteServerGroup(ctx context.Context, serverGroupID string) error
+	GetServerGroup(ctx context.Context, serverGroupID string) (*servergroups.ServerGroup, error)
+	ListServerGroups(ctx context.Context, listOpts servergroups.ListOptsBuilder) iter.Seq2[*servergroups.ServerGroup, error]
 
-	ListServerGroups() ([]servergroups.ServerGroup, error)
+	CreateVolumeAttachment(ctx context.Context, serverID string, createOpts volumeattach.CreateOptsBuilder) (*volumeattach.VolumeAttachment, error)
+	DeleteVolumeAttachment(ctx context.Context, serverID, volumeID string) error
+
+	ListAttachedInterfaces(ctx context.Context, serverID string) ([]attachinterfaces.Interface, error)
+	CreateAttachedInterface(ctx context.Context, serverID string, createOpts attachinterfaces.CreateOptsBuilder) (*attachinterfaces.Interface, error)
+	DeleteAttachedInterface(ctx context.Context, serverID, portID string) error
+
+	ReplaceAllServerAttributesTags(ctx context.Context, resourceID string, opts tags.ReplaceAllOptsBuilder) ([]string, error)
+	ReplaceServerMetadata(ctx context.Context, serverID string, opts servers.MetadataOpts) (map[string]string, error)
 }
 
 type computeClient struct{ client *gophercloud.ServiceClient }
@@ -78,8 +91,8 @@ func NewComputeClient(providerClient *gophercloud.ProviderClient, providerClient
 	return &computeClient{compute}, nil
 }
 
-func (c computeClient) ListAvailabilityZones() ([]availabilityzones.AvailabilityZone, error) {
-	allPages, err := availabilityzones.List(c.client).AllPages(context.TODO())
+func (c computeClient) ListAvailabilityZones(ctx context.Context) ([]availabilityzones.AvailabilityZone, error) {
+	allPages, err := availabilityzones.List(c.client).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,29 +111,11 @@ func (c computeClient) DeleteFlavor(ctx context.Context, id string) error {
 	return flavors.Delete(ctx, c.client, id).ExtractErr()
 }
 
-func (c computeClient) ListFlavors(ctx context.Context, opts flavors.ListOptsBuilder) <-chan (Result[*flavors.Flavor]) {
-	ch := make(chan (Result[*flavors.Flavor]))
-	go func() {
-		defer close(ch)
-		if err := flavors.ListDetail(c.client, opts).EachPage(ctx, func(ctx context.Context, page pagination.Page) (bool, error) {
-			pageFlavors, err := flavors.ExtractFlavors(page)
-			if err != nil {
-				return false, err
-			}
-			for i := range pageFlavors {
-				select {
-				case <-ctx.Done():
-					return false, ctx.Err()
-				default:
-					ch <- NewResultOk(&pageFlavors[i])
-				}
-			}
-			return true, nil
-		}); err != nil {
-			ch <- NewResultErr[*flavors.Flavor](err)
-		}
-	}()
-	return ch
+func (c computeClient) ListFlavors(ctx context.Context, opts flavors.ListOptsBuilder) iter.Seq2[*flavors.Flavor, error] {
+	pager := flavors.ListDetail(c.client, opts)
+	return func(yield func(*flavors.Flavor, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(flavors.ExtractFlavors, yield))
+	}
 }
 
 func (c computeClient) CreateServer(ctx context.Context, createOpts servers.CreateOptsBuilder, schedulerHints servers.SchedulerHintOptsBuilder) (*servers.Server, error) {
@@ -135,50 +130,66 @@ func (c computeClient) GetServer(ctx context.Context, serverID string) (*servers
 	return servers.Get(ctx, c.client, serverID).Extract()
 }
 
-func (c computeClient) ListServers(ctx context.Context, opts servers.ListOptsBuilder) <-chan (Result[*servers.Server]) {
-	ch := make(chan (Result[*servers.Server]))
-	go func() {
-		defer close(ch)
-		if err := servers.List(c.client, opts).EachPage(ctx, func(ctx context.Context, page pagination.Page) (bool, error) {
-			allItems, err := servers.ExtractServers(page)
-			if err != nil {
-				return false, err
-			}
-			for i := range allItems {
-				select {
-				case <-ctx.Done():
-					return false, ctx.Err()
-				default:
-					ch <- NewResultOk(&allItems[i])
-				}
-			}
-			return true, nil
-		}); err != nil {
-			ch <- NewResultErr[*servers.Server](err)
-		}
-	}()
-	return ch
+func (c computeClient) ListServers(ctx context.Context, opts servers.ListOptsBuilder) iter.Seq2[*servers.Server, error] {
+	pager := servers.List(c.client, opts)
+	return func(yield func(*servers.Server, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(servers.ExtractServers, yield))
+	}
 }
 
-func (c computeClient) ListAttachedInterfaces(serverID string) ([]attachinterfaces.Interface, error) {
-	interfaces, err := attachinterfaces.List(c.client, serverID).AllPages(context.TODO())
+func (c computeClient) UpdateServer(ctx context.Context, id string, opts servers.UpdateOptsBuilder) (*servers.Server, error) {
+	return servers.Update(ctx, c.client, id, opts).Extract()
+}
+
+func (c computeClient) ListAttachedInterfaces(ctx context.Context, serverID string) ([]attachinterfaces.Interface, error) {
+	interfaces, err := attachinterfaces.List(c.client, serverID).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return attachinterfaces.ExtractInterfaces(interfaces)
 }
 
-func (c computeClient) DeleteAttachedInterface(serverID, portID string) error {
-	return attachinterfaces.Delete(context.TODO(), c.client, serverID, portID).ExtractErr()
+func (c computeClient) CreateAttachedInterface(ctx context.Context, serverID string, createOpts attachinterfaces.CreateOptsBuilder) (*attachinterfaces.Interface, error) {
+	return attachinterfaces.Create(ctx, c.client, serverID, createOpts).Extract()
 }
 
-func (c computeClient) ListServerGroups() ([]servergroups.ServerGroup, error) {
-	opts := servergroups.ListOpts{}
-	allPages, err := servergroups.List(c.client, opts).AllPages(context.TODO())
-	if err != nil {
-		return nil, err
+func (c computeClient) DeleteAttachedInterface(ctx context.Context, serverID, portID string) error {
+	return attachinterfaces.Delete(ctx, c.client, serverID, portID).ExtractErr()
+}
+
+func (c computeClient) CreateServerGroup(ctx context.Context, createOpts servergroups.CreateOptsBuilder) (*servergroups.ServerGroup, error) {
+	return servergroups.Create(ctx, c.client, createOpts).Extract()
+}
+
+func (c computeClient) DeleteServerGroup(ctx context.Context, serverGroupID string) error {
+	return servergroups.Delete(ctx, c.client, serverGroupID).ExtractErr()
+}
+
+func (c computeClient) GetServerGroup(ctx context.Context, serverGroupID string) (*servergroups.ServerGroup, error) {
+	return servergroups.Get(ctx, c.client, serverGroupID).Extract()
+}
+
+func (c computeClient) ListServerGroups(ctx context.Context, opts servergroups.ListOptsBuilder) iter.Seq2[*servergroups.ServerGroup, error] {
+	pager := servergroups.List(c.client, opts)
+	return func(yield func(*servergroups.ServerGroup, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(servergroups.ExtractServerGroups, yield))
 	}
-	return servergroups.ExtractServerGroups(allPages)
+}
+
+func (c computeClient) CreateVolumeAttachment(ctx context.Context, serverID string, createOpts volumeattach.CreateOptsBuilder) (*volumeattach.VolumeAttachment, error) {
+	return volumeattach.Create(ctx, c.client, serverID, createOpts).Extract()
+}
+
+func (c computeClient) DeleteVolumeAttachment(ctx context.Context, serverID, volumeID string) error {
+	return volumeattach.Delete(ctx, c.client, serverID, volumeID).ExtractErr()
+}
+
+func (c computeClient) ReplaceAllServerAttributesTags(ctx context.Context, resourceID string, opts tags.ReplaceAllOptsBuilder) ([]string, error) {
+	return tags.ReplaceAll(ctx, c.client, resourceID, opts).Extract()
+}
+
+func (c computeClient) ReplaceServerMetadata(ctx context.Context, serverID string, opts servers.MetadataOpts) (map[string]string, error) {
+	return servers.ResetMetadata(ctx, c.client, serverID, opts).Extract()
 }
 
 type computeErrorClient struct{ error }
@@ -196,16 +207,13 @@ func (e computeErrorClient) GetFlavor(ctx context.Context, id string) (*flavors.
 func (e computeErrorClient) DeleteFlavor(ctx context.Context, id string) error {
 	return e.error
 }
-func (e computeErrorClient) ListFlavors(ctx context.Context, listOpts flavors.ListOptsBuilder) <-chan (Result[*flavors.Flavor]) {
-	ch := make(chan (Result[*flavors.Flavor]))
-	go func() {
-		defer close(ch)
-		ch <- NewResultErr[*flavors.Flavor](e.error)
-	}()
-	return ch
+func (e computeErrorClient) ListFlavors(_ context.Context, _ flavors.ListOptsBuilder) iter.Seq2[*flavors.Flavor, error] {
+	return func(yield func(*flavors.Flavor, error) bool) {
+		yield(nil, e.error)
+	}
 }
 
-func (e computeErrorClient) ListAvailabilityZones() ([]availabilityzones.AvailabilityZone, error) {
+func (e computeErrorClient) ListAvailabilityZones(_ context.Context) ([]availabilityzones.AvailabilityZone, error) {
 	return nil, e.error
 }
 
@@ -221,23 +229,58 @@ func (e computeErrorClient) GetServer(_ context.Context, _ string) (*servers.Ser
 	return nil, e.error
 }
 
-func (e computeErrorClient) ListServers(ctx context.Context, listOpts servers.ListOptsBuilder) <-chan (Result[*servers.Server]) {
-	ch := make(chan (Result[*servers.Server]))
-	go func() {
-		defer close(ch)
-		ch <- NewResultErr[*servers.Server](e.error)
-	}()
-	return ch
+func (e computeErrorClient) ListServers(ctx context.Context, listOpts servers.ListOptsBuilder) iter.Seq2[*servers.Server, error] {
+	return func(yield func(*servers.Server, error) bool) {
+		yield(nil, e.error)
+	}
 }
 
-func (e computeErrorClient) ListAttachedInterfaces(_ string) ([]attachinterfaces.Interface, error) {
+func (e computeErrorClient) UpdateServer(_ context.Context, _ string, _ servers.UpdateOptsBuilder) (*servers.Server, error) {
 	return nil, e.error
 }
 
-func (e computeErrorClient) DeleteAttachedInterface(_, _ string) error {
+func (e computeErrorClient) CreateServerGroup(_ context.Context, _ servergroups.CreateOptsBuilder) (*servergroups.ServerGroup, error) {
+	return nil, e.error
+}
+
+func (e computeErrorClient) DeleteServerGroup(_ context.Context, _ string) error {
 	return e.error
 }
 
-func (e computeErrorClient) ListServerGroups() ([]servergroups.ServerGroup, error) {
+func (e computeErrorClient) GetServerGroup(_ context.Context, _ string) (*servergroups.ServerGroup, error) {
+	return nil, e.error
+}
+
+func (e computeErrorClient) ListServerGroups(ctx context.Context, listOpts servergroups.ListOptsBuilder) iter.Seq2[*servergroups.ServerGroup, error] {
+	return func(yield func(*servergroups.ServerGroup, error) bool) {
+		yield(nil, e.error)
+	}
+}
+
+func (e computeErrorClient) CreateVolumeAttachment(_ context.Context, _ string, _ volumeattach.CreateOptsBuilder) (*volumeattach.VolumeAttachment, error) {
+	return nil, e.error
+}
+
+func (e computeErrorClient) DeleteVolumeAttachment(_ context.Context, _, _ string) error {
+	return e.error
+}
+
+func (e computeErrorClient) ListAttachedInterfaces(_ context.Context, _ string) ([]attachinterfaces.Interface, error) {
+	return nil, e.error
+}
+
+func (e computeErrorClient) CreateAttachedInterface(_ context.Context, _ string, _ attachinterfaces.CreateOptsBuilder) (*attachinterfaces.Interface, error) {
+	return nil, e.error
+}
+
+func (e computeErrorClient) DeleteAttachedInterface(_ context.Context, _, _ string) error {
+	return e.error
+}
+
+func (e computeErrorClient) ReplaceAllServerAttributesTags(_ context.Context, _ string, _ tags.ReplaceAllOptsBuilder) ([]string, error) {
+	return nil, e.error
+}
+
+func (e computeErrorClient) ReplaceServerMetadata(_ context.Context, _ string, _ servers.MetadataOpts) (map[string]string, error) {
 	return nil, e.error
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ limitations under the License.
 package fake
 
 import (
-	applyconfiguration "github.com/k-orc/openstack-resource-controller/pkg/clients/applyconfiguration"
-	clientset "github.com/k-orc/openstack-resource-controller/pkg/clients/clientset/clientset"
-	openstackv1alpha1 "github.com/k-orc/openstack-resource-controller/pkg/clients/clientset/clientset/typed/api/v1alpha1"
-	fakeopenstackv1alpha1 "github.com/k-orc/openstack-resource-controller/pkg/clients/clientset/clientset/typed/api/v1alpha1/fake"
+	applyconfiguration "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/applyconfiguration"
+	clientset "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset"
+	openstackv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset/typed/api/v1alpha1"
+	fakeopenstackv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset/typed/api/v1alpha1/fake"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -50,9 +51,13 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 	cs.discovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
 	cs.AddReactor("*", "*", testing.ObjectReaction(o))
 	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
+		var opts metav1.ListOptions
+		if watchActcion, ok := action.(testing.WatchActionImpl); ok {
+			opts = watchActcion.ListOptions
+		}
 		gvr := action.GetResource()
 		ns := action.GetNamespace()
-		watch, err := o.Watch(gvr, ns)
+		watch, err := o.Watch(gvr, ns, opts)
 		if err != nil {
 			return false, nil, err
 		}
@@ -99,9 +104,13 @@ func NewClientset(objects ...runtime.Object) *Clientset {
 	cs.discovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
 	cs.AddReactor("*", "*", testing.ObjectReaction(o))
 	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
+		var opts metav1.ListOptions
+		if watchAction, ok := action.(testing.WatchActionImpl); ok {
+			opts = watchAction.ListOptions
+		}
 		gvr := action.GetResource()
 		ns := action.GetNamespace()
-		watch, err := o.Watch(gvr, ns)
+		watch, err := o.Watch(gvr, ns, opts)
 		if err != nil {
 			return false, nil, err
 		}

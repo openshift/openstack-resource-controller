@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,13 +19,15 @@ limitations under the License.
 package v1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
 )
 
 // PodOSApplyConfiguration represents a declarative configuration of the PodOS type for use
 // with apply.
-type PodOSApplyConfiguration struct {
-	Name *v1.OSName `json:"name,omitempty"`
+type ServerFilterApplyConfiguration struct {
+	Name                                 *apiv1alpha1.OpenStackName `json:"name,omitempty"`
+	AvailabilityZone                     *string                    `json:"availabilityZone,omitempty"`
+	FilterByServerTagsApplyConfiguration `json:",inline"`
 }
 
 // PodOSApplyConfiguration constructs a declarative configuration of the PodOS type for use with
@@ -37,7 +39,55 @@ func PodOS() *PodOSApplyConfiguration {
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *PodOSApplyConfiguration) WithName(value v1.OSName) *PodOSApplyConfiguration {
+func (b *ServerFilterApplyConfiguration) WithName(value apiv1alpha1.OpenStackName) *ServerFilterApplyConfiguration {
 	b.Name = &value
+	return b
+}
+
+// WithAvailabilityZone sets the AvailabilityZone field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AvailabilityZone field is set to the value of the last call.
+func (b *ServerFilterApplyConfiguration) WithAvailabilityZone(value string) *ServerFilterApplyConfiguration {
+	b.AvailabilityZone = &value
+	return b
+}
+
+// WithTags adds the given value to the Tags field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Tags field.
+func (b *ServerFilterApplyConfiguration) WithTags(values ...apiv1alpha1.ServerTag) *ServerFilterApplyConfiguration {
+	for i := range values {
+		b.FilterByServerTagsApplyConfiguration.Tags = append(b.FilterByServerTagsApplyConfiguration.Tags, values[i])
+	}
+	return b
+}
+
+// WithTagsAny adds the given value to the TagsAny field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the TagsAny field.
+func (b *ServerFilterApplyConfiguration) WithTagsAny(values ...apiv1alpha1.ServerTag) *ServerFilterApplyConfiguration {
+	for i := range values {
+		b.FilterByServerTagsApplyConfiguration.TagsAny = append(b.FilterByServerTagsApplyConfiguration.TagsAny, values[i])
+	}
+	return b
+}
+
+// WithNotTags adds the given value to the NotTags field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the NotTags field.
+func (b *ServerFilterApplyConfiguration) WithNotTags(values ...apiv1alpha1.ServerTag) *ServerFilterApplyConfiguration {
+	for i := range values {
+		b.FilterByServerTagsApplyConfiguration.NotTags = append(b.FilterByServerTagsApplyConfiguration.NotTags, values[i])
+	}
+	return b
+}
+
+// WithNotTagsAny adds the given value to the NotTagsAny field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the NotTagsAny field.
+func (b *ServerFilterApplyConfiguration) WithNotTagsAny(values ...apiv1alpha1.ServerTag) *ServerFilterApplyConfiguration {
+	for i := range values {
+		b.FilterByServerTagsApplyConfiguration.NotTagsAny = append(b.FilterByServerTagsApplyConfiguration.NotTagsAny, values[i])
+	}
 	return b
 }

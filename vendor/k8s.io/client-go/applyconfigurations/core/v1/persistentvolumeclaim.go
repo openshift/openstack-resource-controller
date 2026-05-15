@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	apicorev1 "k8s.io/api/core/v1"
+	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
+	internal "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
@@ -69,9 +70,9 @@ func ExtractPersistentVolumeClaimStatus(persistentVolumeClaim *apicorev1.Persist
 	return extractPersistentVolumeClaim(persistentVolumeClaim, fieldManager, "status")
 }
 
-func extractPersistentVolumeClaim(persistentVolumeClaim *apicorev1.PersistentVolumeClaim, fieldManager string, subresource string) (*PersistentVolumeClaimApplyConfiguration, error) {
-	b := &PersistentVolumeClaimApplyConfiguration{}
-	err := managedfields.ExtractInto(persistentVolumeClaim, internal.Parser().Type("io.k8s.api.core.v1.PersistentVolumeClaim"), fieldManager, b, subresource)
+func extractRouterInterface(routerInterface *apiv1alpha1.RouterInterface, fieldManager string, subresource string) (*RouterInterfaceApplyConfiguration, error) {
+	b := &RouterInterfaceApplyConfiguration{}
+	err := managedfields.ExtractInto(routerInterface, internal.Parser().Type("com.github.k-orc.openstack-resource-controller.v2.api.v1alpha1.RouterInterface"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -82,20 +83,21 @@ func extractPersistentVolumeClaim(persistentVolumeClaim *apicorev1.PersistentVol
 	b.WithAPIVersion("v1")
 	return b, nil
 }
+func (b RouterInterfaceApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *PersistentVolumeClaimApplyConfiguration) WithKind(value string) *PersistentVolumeClaimApplyConfiguration {
-	b.Kind = &value
+func (b *RouterInterfaceApplyConfiguration) WithKind(value string) *RouterInterfaceApplyConfiguration {
+	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
 
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *PersistentVolumeClaimApplyConfiguration) WithAPIVersion(value string) *PersistentVolumeClaimApplyConfiguration {
-	b.APIVersion = &value
+func (b *RouterInterfaceApplyConfiguration) WithAPIVersion(value string) *RouterInterfaceApplyConfiguration {
+	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
 
@@ -104,7 +106,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithAPIVersion(value string) *
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithName(value string) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.Name = &value
+	b.ObjectMetaApplyConfiguration.Name = &value
 	return b
 }
 
@@ -113,7 +115,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithName(value string) *Persis
 // If called multiple times, the GenerateName field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithGenerateName(value string) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.GenerateName = &value
+	b.ObjectMetaApplyConfiguration.GenerateName = &value
 	return b
 }
 
@@ -122,7 +124,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithGenerateName(value string)
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithNamespace(value string) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.Namespace = &value
+	b.ObjectMetaApplyConfiguration.Namespace = &value
 	return b
 }
 
@@ -131,7 +133,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithNamespace(value string) *P
 // If called multiple times, the UID field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithUID(value types.UID) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.UID = &value
+	b.ObjectMetaApplyConfiguration.UID = &value
 	return b
 }
 
@@ -140,7 +142,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithUID(value types.UID) *Pers
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithResourceVersion(value string) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ResourceVersion = &value
+	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
 	return b
 }
 
@@ -149,7 +151,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithResourceVersion(value stri
 // If called multiple times, the Generation field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithGeneration(value int64) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.Generation = &value
+	b.ObjectMetaApplyConfiguration.Generation = &value
 	return b
 }
 
@@ -158,7 +160,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithGeneration(value int64) *P
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithCreationTimestamp(value metav1.Time) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.CreationTimestamp = &value
+	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
 }
 
@@ -167,7 +169,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithCreationTimestamp(value me
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.DeletionTimestamp = &value
+	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
 }
 
@@ -176,7 +178,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithDeletionTimestamp(value me
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
 func (b *PersistentVolumeClaimApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.DeletionGracePeriodSeconds = &value
+	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
 	return b
 }
 
@@ -186,11 +188,11 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithDeletionGracePeriodSeconds
 // overwriting an existing map entries in Labels field with the same key.
 func (b *PersistentVolumeClaimApplyConfiguration) WithLabels(entries map[string]string) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.Labels == nil && len(entries) > 0 {
-		b.Labels = make(map[string]string, len(entries))
+	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
+		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.Labels[k] = v
+		b.ObjectMetaApplyConfiguration.Labels[k] = v
 	}
 	return b
 }
@@ -201,11 +203,11 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithLabels(entries map[string]
 // overwriting an existing map entries in Annotations field with the same key.
 func (b *PersistentVolumeClaimApplyConfiguration) WithAnnotations(entries map[string]string) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.Annotations == nil && len(entries) > 0 {
-		b.Annotations = make(map[string]string, len(entries))
+	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
+		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.Annotations[k] = v
+		b.ObjectMetaApplyConfiguration.Annotations[k] = v
 	}
 	return b
 }
@@ -219,7 +221,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithOwnerReferences(values ...
 		if values[i] == nil {
 			panic("nil value passed to WithOwnerReferences")
 		}
-		b.OwnerReferences = append(b.OwnerReferences, *values[i])
+		b.ObjectMetaApplyConfiguration.OwnerReferences = append(b.ObjectMetaApplyConfiguration.OwnerReferences, *values[i])
 	}
 	return b
 }
@@ -230,7 +232,7 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithOwnerReferences(values ...
 func (b *PersistentVolumeClaimApplyConfiguration) WithFinalizers(values ...string) *PersistentVolumeClaimApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
-		b.Finalizers = append(b.Finalizers, values[i])
+		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
 	}
 	return b
 }
@@ -257,8 +259,24 @@ func (b *PersistentVolumeClaimApplyConfiguration) WithStatus(value *PersistentVo
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *RouterInterfaceApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *RouterInterfaceApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *PersistentVolumeClaimApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
-	return b.Name
+	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *RouterInterfaceApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

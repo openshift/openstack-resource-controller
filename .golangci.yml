@@ -1,23 +1,8 @@
+version: "2"
 run:
-  timeout: 5m
   allow-parallel-runners: true
-
-issues:
-  # don't skip warning about doc comments
-  # don't exclude the default set of lint
-  exclude-use-default: false
-  # restore some of the defaults
-  # (fill in the rest as needed)
-  exclude-rules:
-    - path: "api/*"
-      linters:
-        - lll
-    - path: "internal/*"
-      linters:
-        - dupl
-        - lll
 linters:
-  disable-all: true
+  default: none
   enable:
     - copyloopvar
     - dupl
@@ -25,23 +10,108 @@ linters:
     - ginkgolinter
     - goconst
     - gocyclo
-    - gofmt
-    - goimports
-    - gosimple
     - govet
     - ineffassign
+    - kubeapilinter
     - lll
     - misspell
+    - nolintlint
     - nakedret
     - prealloc
     - revive
     - staticcheck
-    - typecheck
     - unconvert
     - unparam
     - unused
-
-linters-settings:
-  revive:
+  settings:
+    revive:
+      rules:
+        - name: comment-spacings
+    custom:
+      kubeapilinter:
+        type: module
+        description: Kube API Linter lints Kube like APIs based on API conventions and best practices.
+        settings:
+          linters:
+            disable:
+              # NOTE: conflicts with the lack of validation in the Status structs
+              - arrayofstruct
+              # NOTE: The following checks are currently failing
+              - optionalfields
+            enable:
+              - commentstart
+              - conditions
+              - defaults
+              - duplicatemarkers
+              - integers
+              - jsontags
+              - maxlength
+              # NOTE: we have a number of boolean fields. Should we convert them to
+              # string?
+              # - nobools
+              - nodurations
+              - nofloats
+              - nomaps
+              - nonpointerstructs
+              - nonullable
+              - notimestamp
+              - nophase
+              - optionalorrequired
+              - requiredfields
+              - ssatags
+              - statusoptional
+              - statussubresource
+              - uniquemarkers
+              - noopenstackidref
+          lintersConfig:
+            conditions:
+              isFirstField: Warn
+              usePatchStrategy: Ignore
+              useProtobuf: Forbid
+            defaults:
+              # Let's use `+kubebuilder:default` until elastic/crd-ref-docs supports `+default`
+              preferredDefaultMarker: "kubebuilder:default"
+            requiredfields:
+              omitempty:
+                policy: Ignore
+  exclusions:
+    generated: disable
     rules:
-      - name: comment-spacings
+      - linters:
+          - lll
+        path: api/*
+      - linters:
+          - dupl
+          - lll
+        path: internal/*
+      - linters:
+          - dupl
+        path: test/*
+      - linters:
+        - dupl
+        - goimports
+        - unparam
+        path: zz_generated
+      - linters:
+          - kubeapilinter
+        path-except: ^api/*
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - applyconfiguration/*
+      - clientset/*
+      - informers/*
+      - listers/*
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  exclude-generated: disable

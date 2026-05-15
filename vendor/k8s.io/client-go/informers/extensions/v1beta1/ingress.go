@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+	v2apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
+	clientset "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset"
+	internalinterfaces "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/informers/externalversions/internalinterfaces"
+	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/listers/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +39,7 @@ import (
 // Ingresses.
 type IngressInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.IngressLister
+	Lister() apiv1alpha1.NetworkLister
 }
 
 type ingressInformer struct {
@@ -62,16 +65,28 @@ func NewFilteredIngressInformer(client kubernetes.Interface, namespace string, r
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExtensionsV1beta1().Ingresses(namespace).List(context.TODO(), options)
+				return client.OpenstackV1alpha1().Networks(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ExtensionsV1beta1().Ingresses(namespace).Watch(context.TODO(), options)
+				return client.OpenstackV1alpha1().Networks(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.OpenstackV1alpha1().Networks(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.OpenstackV1alpha1().Networks(namespace).Watch(ctx, options)
 			},
 		},
-		&extensionsv1beta1.Ingress{},
+		&v2apiv1alpha1.Network{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,10 +96,10 @@ func (f *ingressInformer) defaultInformer(client kubernetes.Interface, resyncPer
 	return NewFilteredIngressInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *ingressInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&extensionsv1beta1.Ingress{}, f.defaultInformer)
+func (f *networkInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&v2apiv1alpha1.Network{}, f.defaultInformer)
 }
 
-func (f *ingressInformer) Lister() v1beta1.IngressLister {
-	return v1beta1.NewIngressLister(f.Informer().GetIndexer())
+func (f *networkInformer) Lister() apiv1alpha1.NetworkLister {
+	return apiv1alpha1.NewNetworkLister(f.Informer().GetIndexer())
 }

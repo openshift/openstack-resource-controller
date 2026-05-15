@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- external-network.yaml
+- securitygroup.yaml
+
+patches:
+- path: external-network-filter.yaml
+
+secretGenerator:
+- files:
+  - clouds.yaml
+  name: cloud-config
+  type: Opaque

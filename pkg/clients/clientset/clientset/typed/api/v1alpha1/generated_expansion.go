@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,4 +18,50 @@ limitations under the License.
 
 package v1alpha1
 
+type AddressScopeExpansion interface{}
+
+type ApplicationCredentialExpansion interface{}
+
+type DomainExpansion interface{}
+
+type EndpointExpansion interface{}
+
+type FlavorExpansion interface{}
+
+type FloatingIPExpansion interface{}
+
+type GroupExpansion interface{}
+
 type ImageExpansion interface{}
+
+type KeyPairExpansion interface{}
+
+type NetworkExpansion interface{}
+
+type PortExpansion interface{}
+
+type ProjectExpansion interface{}
+
+type RoleExpansion interface{}
+
+type RouterExpansion interface{}
+
+type RouterInterfaceExpansion interface{}
+
+type SecurityGroupExpansion interface{}
+
+type ServerExpansion interface{}
+
+type ServerGroupExpansion interface{}
+
+type ServiceExpansion interface{}
+
+type SubnetExpansion interface{}
+
+type TrunkExpansion interface{}
+
+type UserExpansion interface{}
+
+type VolumeExpansion interface{}
+
+type VolumeTypeExpansion interface{}

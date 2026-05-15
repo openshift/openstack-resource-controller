@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha1 "github.com/k-orc/openstack-resource-controller/pkg/clients/clientset/clientset/typed/api/v1alpha1"
+	v1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset/typed/api/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
@@ -28,8 +28,100 @@ type FakeOpenstackV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeOpenstackV1alpha1) AddressScopes(namespace string) v1alpha1.AddressScopeInterface {
+	return newFakeAddressScopes(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) ApplicationCredentials(namespace string) v1alpha1.ApplicationCredentialInterface {
+	return newFakeApplicationCredentials(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Domains(namespace string) v1alpha1.DomainInterface {
+	return newFakeDomains(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Endpoints(namespace string) v1alpha1.EndpointInterface {
+	return newFakeEndpoints(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Flavors(namespace string) v1alpha1.FlavorInterface {
+	return newFakeFlavors(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) FloatingIPs(namespace string) v1alpha1.FloatingIPInterface {
+	return newFakeFloatingIPs(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Groups(namespace string) v1alpha1.GroupInterface {
+	return newFakeGroups(c, namespace)
+}
+
 func (c *FakeOpenstackV1alpha1) Images(namespace string) v1alpha1.ImageInterface {
-	return &FakeImages{c, namespace}
+	return newFakeImages(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) KeyPairs(namespace string) v1alpha1.KeyPairInterface {
+	return newFakeKeyPairs(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Networks(namespace string) v1alpha1.NetworkInterface {
+	return newFakeNetworks(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Ports(namespace string) v1alpha1.PortInterface {
+	return newFakePorts(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Projects(namespace string) v1alpha1.ProjectInterface {
+	return newFakeProjects(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Roles(namespace string) v1alpha1.RoleInterface {
+	return newFakeRoles(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Routers(namespace string) v1alpha1.RouterInterface {
+	return newFakeRouters(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) RouterInterfaces(namespace string) v1alpha1.RouterInterfaceInterface {
+	return newFakeRouterInterfaces(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) SecurityGroups(namespace string) v1alpha1.SecurityGroupInterface {
+	return newFakeSecurityGroups(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Servers(namespace string) v1alpha1.ServerInterface {
+	return newFakeServers(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) ServerGroups(namespace string) v1alpha1.ServerGroupInterface {
+	return newFakeServerGroups(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Services(namespace string) v1alpha1.ServiceInterface {
+	return newFakeServices(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Subnets(namespace string) v1alpha1.SubnetInterface {
+	return newFakeSubnets(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Trunks(namespace string) v1alpha1.TrunkInterface {
+	return newFakeTrunks(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Users(namespace string) v1alpha1.UserInterface {
+	return newFakeUsers(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) Volumes(namespace string) v1alpha1.VolumeInterface {
+	return newFakeVolumes(c, namespace)
+}
+
+func (c *FakeOpenstackV1alpha1) VolumeTypes(namespace string) v1alpha1.VolumeTypeInterface {
+	return newFakeVolumeTypes(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

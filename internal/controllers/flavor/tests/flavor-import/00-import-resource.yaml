@@ -1,0 +1,17 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Flavor
+metadata:
+  name: flavor-import
+spec:
+  cloudCredentialsRef:
+    # Import does not require admin creds
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: unmanaged
+  import:
+    filter:
+      name: flavor-import-external
+      ram: 12
+      vcpus: 13
+      disk: 14

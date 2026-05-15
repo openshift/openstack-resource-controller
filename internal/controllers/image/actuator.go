@@ -19,112 +19,107 @@ package image
 import (
 	"context"
 	"fmt"
+	"iter"
 	"reflect"
 	"slices"
 
 	"github.com/gophercloud/gophercloud/v2/openstack/image/v2/images"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
-	"github.com/k-orc/openstack-resource-controller/internal/controllers/generic"
-	"github.com/k-orc/openstack-resource-controller/internal/osclients"
-	"github.com/k-orc/openstack-resource-controller/internal/scope"
-	orcerrors "github.com/k-orc/openstack-resource-controller/internal/util/errors"
+	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/controllers/generic/interfaces"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/controllers/generic/progress"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/logging"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/osclients"
+	orcerrors "github.com/k-orc/openstack-resource-controller/v2/internal/util/errors"
+)
+
+type (
+	osResourceT = images.Image
+
+	createResourceActuator    = interfaces.CreateResourceActuator[orcObjectPT, orcObjectT, filterT, osResourceT]
+	deleteResourceActuator    = interfaces.DeleteResourceActuator[orcObjectPT, orcObjectT, osResourceT]
+	reconcileResourceActuator = interfaces.ReconcileResourceActuator[orcObjectPT, osResourceT]
+	resourceReconciler        = interfaces.ResourceReconciler[orcObjectPT, osResourceT]
+	helperFactory             = interfaces.ResourceHelperFactory[orcObjectPT, orcObjectT, resourceSpecT, filterT, osResourceT]
+	imageIterator             = iter.Seq2[*osResourceT, error]
 )
 
 type imageActuator struct {
-	*orcv1alpha1.Image
-	osClient osclients.ImageClient
+	osClient  osclients.ImageClient
+	k8sClient client.Client
 }
 
-func newActuator(ctx context.Context, k8sClient client.Client, scopeFactory scope.Factory, orcObject *orcv1alpha1.Image) (imageActuator, error) {
-	log := ctrl.LoggerFrom(ctx)
+var _ createResourceActuator = imageActuator{}
+var _ deleteResourceActuator = imageActuator{}
 
-	clientScope, err := scopeFactory.NewClientScopeFromObject(ctx, k8sClient, log, orcObject)
-	if err != nil {
-		return imageActuator{}, err
-	}
-	osClient, err := clientScope.NewImageClient()
-	if err != nil {
-		return imageActuator{}, err
-	}
-
-	return imageActuator{
-		Image:    orcObject,
-		osClient: osClient,
-	}, nil
-}
-
-var _ generic.CreateResourceActuator[*images.Image] = imageActuator{}
-var _ generic.DeleteResourceActuator[*images.Image] = imageActuator{}
-
-func (obj imageActuator) GetManagementPolicy() orcv1alpha1.ManagementPolicy {
-	return obj.Spec.ManagementPolicy
-}
-
-func (obj imageActuator) GetManagedOptions() *orcv1alpha1.ManagedOptions {
-	return obj.Spec.ManagedOptions
-}
-
-func (obj imageActuator) GetResourceID(osResource *images.Image) string {
+func (imageActuator) GetResourceID(osResource *osResourceT) string {
 	return osResource.ID
 }
 
-func (obj imageActuator) GetOSResourceByStatusID(ctx context.Context) (bool, *images.Image, error) {
-	if obj.Status.ID == nil {
-		return false, nil, nil
+func (actuator imageActuator) GetOSResourceByID(ctx context.Context, id string) (*osResourceT, progress.ReconcileStatus) {
+	image, err := actuator.osClient.GetImage(ctx, id)
+	if err != nil {
+		return nil, progress.WrapError(err)
 	}
-
-	image, err := obj.osClient.GetImage(*obj.Status.ID)
-	return true, image, err
+	return image, nil
 }
 
-func (obj imageActuator) GetOSResourceBySpec(ctx context.Context) (*images.Image, error) {
+func (actuator imageActuator) ListOSResourcesForAdoption(ctx context.Context, obj orcObjectPT) (imageIterator, bool) {
 	if obj.Spec.Resource == nil {
-		return nil, nil
+		return nil, false
 	}
-	listOpts := listOptsFromCreation(obj.Image)
-	image, err := getGlanceImageFromList(ctx, listOpts, obj.osClient)
-	return image, err
+
+	listOpts := images.ListOpts{
+		Name: getResourceName(obj),
+	}
+	if obj.Spec.Resource.Visibility != nil {
+		listOpts.Visibility = images.ImageVisibility(*obj.Spec.Resource.Visibility)
+	}
+
+	if len(obj.Spec.Resource.Tags) > 0 {
+		listOpts.Tags = make([]string, len(obj.Spec.Resource.Tags))
+		for i := range obj.Spec.Resource.Tags {
+			listOpts.Tags[i] = string(obj.Spec.Resource.Tags[i])
+		}
+	}
+
+	existingImage := actuator.osClient.ListImages(ctx, listOpts)
+	return existingImage, true
 }
 
-func (obj imageActuator) GetOSResourceByImportID(ctx context.Context) (bool, *images.Image, error) {
-	if obj.Spec.Import == nil {
-		return false, nil, nil
+func (actuator imageActuator) ListOSResourcesForImport(ctx context.Context, obj orcObjectPT, filter filterT) (imageIterator, progress.ReconcileStatus) {
+	listOpts := images.ListOpts{
+		Name: string(ptr.Deref(filter.Name, "")),
 	}
-	if obj.Spec.Import.ID == nil {
-		return false, nil, nil
+	if filter.Visibility != nil {
+		listOpts.Visibility = images.ImageVisibility(*filter.Visibility)
 	}
 
-	image, err := obj.osClient.GetImage(*obj.Spec.Import.ID)
-	return true, image, err
+	if len(filter.Tags) > 0 {
+		listOpts.Tags = make([]string, len(filter.Tags))
+		for i := range filter.Tags {
+			listOpts.Tags[i] = string(filter.Tags[i])
+		}
+	}
+
+	return actuator.osClient.ListImages(ctx, listOpts), nil
 }
 
-func (obj imageActuator) GetOSResourceByImportFilter(ctx context.Context) (bool, *images.Image, error) {
-	if obj.Spec.Import == nil {
-		return false, nil, nil
-	}
-	if obj.Spec.Import.Filter == nil {
-		return false, nil, nil
-	}
-
-	listOpts := listOptsFromImportFilter(obj.Spec.Import.Filter)
-	image, err := getGlanceImageFromList(ctx, listOpts, obj.osClient)
-	return true, image, err
-}
-
-func (obj imageActuator) CreateResource(ctx context.Context) ([]generic.WaitingOnEvent, *images.Image, error) {
+func (actuator imageActuator) CreateResource(ctx context.Context, obj *orcv1alpha1.Image) (*osResourceT, progress.ReconcileStatus) {
 	resource := obj.Spec.Resource
 	if resource == nil {
 		// Should have been caught by API validation
-		return nil, nil, orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "Creation requested, but spec.resource is not set")
+		return nil, progress.WrapError(orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "Creation requested, but spec.resource is not set"))
 	}
 
 	if resource.Content == nil {
 		// Should have been caught by API validation
-		return nil, nil, orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "Creation requested, but spec.resource.content is not set")
+		return nil, progress.WrapError(orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "Creation requested, but spec.resource.content is not set"))
 	}
 
 	tags := make([]string, len(resource.Tags))
@@ -139,14 +134,23 @@ func (obj imageActuator) CreateResource(ctx context.Context) ([]generic.WaitingO
 	additionalProperties := map[string]string{}
 	if properties != nil {
 		if properties.MinDiskGB != nil {
-			minDisk = *properties.MinDiskGB
+			minDisk = int(*properties.MinDiskGB)
 		}
 		if properties.MinMemoryMB != nil {
-			minMemory = *properties.MinMemoryMB
+			minMemory = int(*properties.MinMemoryMB)
 		}
 
 		if err := glancePropertiesFromStruct(properties.Hardware, additionalProperties); err != nil {
-			return nil, nil, orcerrors.Terminal(orcv1alpha1.ConditionReasonUnrecoverableError, "programming error", err)
+			return nil, progress.WrapError(orcerrors.Terminal(orcv1alpha1.ConditionReasonUnrecoverableError, "programming error", err))
+		}
+		if err := glancePropertiesFromStruct(properties.OperatingSystem, additionalProperties); err != nil {
+			return nil, progress.WrapError(orcerrors.Terminal(orcv1alpha1.ConditionReasonUnrecoverableError, "programming error", err))
+		}
+		if properties.Architecture != nil {
+			additionalProperties["architecture"] = *properties.Architecture
+		}
+		if properties.HypervisorType != nil {
+			additionalProperties["hypervisor_type"] = *properties.HypervisorType
 		}
 	}
 
@@ -155,8 +159,8 @@ func (obj imageActuator) CreateResource(ctx context.Context) ([]generic.WaitingO
 		visibility = ptr.To(images.ImageVisibility(*resource.Visibility))
 	}
 
-	image, err := obj.osClient.CreateImage(ctx, &images.CreateOpts{
-		Name:            string(getResourceName(obj.Image)),
+	image, err := actuator.osClient.CreateImage(ctx, &images.CreateOpts{
+		Name:            getResourceName(obj),
 		Visibility:      visibility,
 		Tags:            tags,
 		ContainerFormat: string(resource.Content.ContainerFormat),
@@ -167,55 +171,123 @@ func (obj imageActuator) CreateResource(ctx context.Context) ([]generic.WaitingO
 		Properties:      additionalProperties,
 	})
 
-	// We should require the spec to be updated before retrying a create which returned a conflict
-	if orcerrors.IsConflict(err) {
-		err = orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "invalid configuration creating image: "+err.Error(), err)
-	}
-
-	return nil, image, err
-}
-
-func (obj imageActuator) DeleteResource(ctx context.Context, osResource *images.Image) ([]generic.WaitingOnEvent, error) {
-	return nil, obj.osClient.DeleteImage(ctx, osResource.ID)
-}
-
-// getResourceName returns the name of the glance image we should use.
-func getResourceName(orcImage *orcv1alpha1.Image) orcv1alpha1.OpenStackName {
-	if orcImage.Spec.Resource.Name != nil {
-		return *orcImage.Spec.Resource.Name
-	}
-	return orcv1alpha1.OpenStackName(orcImage.Name)
-}
-
-func listOptsFromImportFilter(filter *orcv1alpha1.ImageFilter) images.ListOptsBuilder {
-	return images.ListOpts{Name: ptr.Deref(filter.Name, "")}
-}
-
-// listOptsFromCreation returns a listOpts which will return the image which
-// would have been created from the current spec and hopefully no other image.
-// Its purpose is to automatically adopt an image that we created but failed to
-// write to status.id.
-func listOptsFromCreation(orcImage *orcv1alpha1.Image) images.ListOptsBuilder {
-	return images.ListOpts{Name: string(getResourceName(orcImage))}
-}
-
-func getGlanceImageFromList(_ context.Context, listOpts images.ListOptsBuilder, imageClient osclients.ImageClient) (*images.Image, error) {
-	glanceImages, err := imageClient.ListImages(listOpts)
 	if err != nil {
-		return nil, err
+		if !orcerrors.IsRetryable(err) {
+			err = orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "invalid configuration creating image: "+err.Error(), err)
+		}
+		return nil, progress.WrapError(err)
 	}
 
-	if len(glanceImages) == 1 {
-		return &glanceImages[0], nil
+	if err != nil {
+		return nil, progress.WrapError(err)
+	}
+	return image, nil
+}
+
+func (actuator imageActuator) DeleteResource(ctx context.Context, _ orcObjectPT, osResource *osResourceT) progress.ReconcileStatus {
+	return progress.WrapError(actuator.osClient.DeleteImage(ctx, osResource.ID))
+}
+
+func (actuator imageActuator) UpdateResource(ctx context.Context, obj orcObjectPT, osResource *osResourceT) progress.ReconcileStatus {
+	log := ctrl.LoggerFrom(ctx)
+	resource := obj.Spec.Resource
+	if resource == nil {
+		return progress.WrapError(
+			orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "Update requested, but spec.resource is not set"))
 	}
 
-	// No image found
-	if len(glanceImages) == 0 {
-		return nil, nil
+	updateOpts := images.UpdateOpts{}
+
+	updateOpts = handleNameUpdate(updateOpts, obj, osResource)
+	updateOpts = handleVisibilityUpdate(updateOpts, resource, osResource)
+	updateOpts = handleProtectedUpdate(updateOpts, resource, osResource)
+	updateOpts = handleTagsUpdate(updateOpts, resource, osResource)
+
+	if !needsUpdate(updateOpts) {
+		log.V(logging.Debug).Info("No changes")
+		return nil
 	}
 
-	// Multiple images found
-	return nil, orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, fmt.Sprintf("Expected to find exactly one image to import. Found %d", len(glanceImages)))
+	_, err := actuator.osClient.UpdateImage(ctx, osResource.ID, updateOpts)
+
+	if err != nil {
+		if !orcerrors.IsRetryable(err) {
+			err = orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, "invalid configuration updating resource: "+err.Error(), err)
+		}
+		return progress.WrapError(err)
+	}
+
+	return progress.NeedsRefresh()
+}
+
+func needsUpdate(updateOpts images.UpdateOpts) bool {
+	return len(updateOpts) > 0
+}
+
+func handleNameUpdate(updateOpts images.UpdateOpts, obj orcObjectPT, osResource *osResourceT) images.UpdateOpts {
+	name := getResourceName(obj)
+
+	if osResource.Name != name {
+		patch := images.ReplaceImageName{
+			NewName: name,
+		}
+		updateOpts = append(updateOpts, patch)
+	}
+	return updateOpts
+}
+
+func handleVisibilityUpdate(updateOpts images.UpdateOpts, resource *resourceSpecT, osResource *osResourceT) images.UpdateOpts {
+	desiredVisibility := resource.Visibility
+
+	if desiredVisibility == nil {
+		return updateOpts
+	}
+
+	visValue := images.ImageVisibility(*desiredVisibility)
+
+	if osResource.Visibility != visValue {
+		patch := images.UpdateVisibility{
+			Visibility: visValue,
+		}
+		updateOpts = append(updateOpts, patch)
+	}
+
+	return updateOpts
+}
+
+func handleProtectedUpdate(updateOpts images.UpdateOpts, resource *resourceSpecT, osResource *osResourceT) images.UpdateOpts {
+	protectedValue := ptr.Deref(resource.Protected, false)
+
+	if osResource.Protected != protectedValue {
+		patch := images.ReplaceImageProtected{
+			NewProtected: protectedValue,
+		}
+		updateOpts = append(updateOpts, patch)
+	}
+
+	return updateOpts
+}
+
+func handleTagsUpdate(updateOpts images.UpdateOpts, resource *resourceSpecT, osResource *osResourceT) images.UpdateOpts {
+	DesiredTags := []string{}
+	if resource.Tags != nil {
+		DesiredTags = make([]string, len(resource.Tags))
+		for i, tag := range resource.Tags {
+			DesiredTags[i] = string(tag)
+		}
+	}
+
+	slices.Sort(DesiredTags)
+	slices.Sort(osResource.Tags)
+
+	if !slices.Equal(DesiredTags, osResource.Tags) {
+		patch := images.ReplaceImageTags{
+			NewTags: DesiredTags,
+		}
+		updateOpts = append(updateOpts, patch)
+	}
+
+	return updateOpts
 }
 
 // glancePropertiesFromStruct populates a properties struct using field values and glance tags defined on the given struct
@@ -257,4 +329,147 @@ func glancePropertiesFromStruct(propStruct interface{}, properties map[string]st
 	}
 
 	return nil
+}
+
+var _ reconcileResourceActuator = imageActuator{}
+
+func (actuator imageActuator) GetResourceReconcilers(ctx context.Context, orcObject orcObjectPT, osResource *osResourceT, controller interfaces.ResourceController) ([]resourceReconciler, progress.ReconcileStatus) {
+	return []resourceReconciler{
+		actuator.handleUpload,
+		actuator.UpdateResource,
+	}, nil
+}
+
+func (actuator imageActuator) handleUpload(ctx context.Context, orcObject orcObjectPT, osResource *osResourceT) progress.ReconcileStatus {
+	log := ctrl.LoggerFrom(ctx)
+
+	switch osResource.Status {
+
+	// Cases where we're not going to take any action until the next resync
+	case images.ImageStatusActive, images.ImageStatusDeactivated:
+		return progress.WrapError(setDownloadingStatus(ctx, false, "Data saved", orcv1alpha1.ConditionReasonSuccess, metav1.ConditionFalse, orcObject, actuator.k8sClient))
+
+	// Content is being saved. Check back in a minute
+	// "importing" is seen during web-download
+	// "saving" is seen while uploading, but might be seen because our upload failed and glance hasn't reset yet.
+	case images.ImageStatusImporting, images.ImageStatusSaving:
+		return progress.NewReconcileStatus().
+			WithProgressMessage("Glance is downloading image content").
+			WithRequeue(externalUpdatePollingPeriod)
+
+	// Newly created image, waiting for upload, or... previous upload was interrupted and has now reset
+	case images.ImageStatusQueued:
+		// Don't attempt image creation if we're not managing the image
+		if orcObject.Spec.ManagementPolicy == orcv1alpha1.ManagementPolicyUnmanaged {
+			return progress.NewReconcileStatus().
+				WithProgressMessage("Waiting for glance image content to be uploaded externally").
+				WithRequeue(externalUpdatePollingPeriod)
+		}
+
+		// Initialize download status
+		if orcObject.Status.DownloadAttempts == nil {
+			err := setDownloadingStatus(ctx, false, "Starting image upload", orcv1alpha1.ConditionReasonProgressing, metav1.ConditionTrue, orcObject, actuator.k8sClient)
+			if err != nil {
+				return progress.WrapError(err)
+			}
+
+			return progress.NewReconcileStatus().
+				WithProgressMessage("Starting image upload")
+		}
+
+		if ptr.Deref(orcObject.Status.DownloadAttempts, 0) >= maxDownloadAttempts {
+			return progress.WrapError(
+				orcerrors.Terminal(orcv1alpha1.ConditionReasonInvalidConfiguration, fmt.Sprintf("Unable to download content after %d attempts", maxDownloadAttempts)))
+		}
+
+		canWebDownload, err := actuator.canWebDownload(ctx, orcObject)
+		if err != nil {
+			return progress.WrapError(err)
+		}
+
+		if canWebDownload {
+			// We frequently hit a race with glance here. There is a
+			// delay after doing an import before glance updates the
+			// status from queued, meaning we frequently attempt to
+			// start a second import. Although the status isn't
+			// updated yet, glance still returns a 409 error when
+			// this happens due to the existing task. This is
+			// harmless.
+
+			err := actuator.webDownload(ctx, orcObject, osResource)
+			if err != nil {
+				return progress.WrapError(err)
+			}
+
+			// Don't increment DownloadAttempts unless webDownload returned success
+			err = setDownloadingStatus(ctx, true, "Web download in progress", orcv1alpha1.ConditionReasonProgressing, metav1.ConditionTrue, orcObject, actuator.k8sClient)
+			if err != nil {
+				return progress.WrapError(err)
+			}
+
+			return progress.WaitingOnOpenStack(progress.WaitingOnReady, externalUpdatePollingPeriod)
+		} else {
+			err := actuator.uploadImageContent(ctx, orcObject, osResource)
+			if err != nil {
+				return progress.WrapError(err)
+			}
+			return progress.NeedsRefresh()
+		}
+
+	// Error cases
+	case images.ImageStatusKilled:
+		return progress.WrapError(
+			orcerrors.Terminal(orcv1alpha1.ConditionReasonUnrecoverableError, "a glance error occurred while saving image content"))
+
+	case images.ImageStatusDeleted, images.ImageStatusPendingDelete:
+		return progress.WrapError(
+			orcerrors.Terminal(orcv1alpha1.ConditionReasonUnrecoverableError, "image status is deleting"))
+
+	default:
+		log.V(logging.Verbose).Info("Waiting for OpenStack resource to be ACTIVE")
+		return progress.WaitingOnOpenStack(progress.WaitingOnReady, externalUpdatePollingPeriod)
+	}
+}
+
+type imageHelperFactory struct{}
+
+var _ helperFactory = imageHelperFactory{}
+
+func (imageHelperFactory) NewAPIObjectAdapter(obj orcObjectPT) adapterI {
+	return imageAdapter{obj}
+}
+
+func (imageHelperFactory) NewCreateActuator(ctx context.Context, orcObject orcObjectPT, controller interfaces.ResourceController) (createResourceActuator, progress.ReconcileStatus) {
+	return newActuator(ctx, controller, orcObject)
+}
+
+func (imageHelperFactory) NewDeleteActuator(ctx context.Context, orcObject orcObjectPT, controller interfaces.ResourceController) (deleteResourceActuator, progress.ReconcileStatus) {
+	return newActuator(ctx, controller, orcObject)
+}
+
+func newActuator(ctx context.Context, controller interfaces.ResourceController, orcObject *orcv1alpha1.Image) (imageActuator, progress.ReconcileStatus) {
+	if orcObject == nil {
+		return imageActuator{}, progress.WrapError(fmt.Errorf("orcObject may not be nil"))
+	}
+
+	// Ensure credential secrets exist and have our finalizer
+	_, reconcileStatus := credentialsDependency.GetDependencies(ctx, controller.GetK8sClient(), orcObject, func(*corev1.Secret) bool { return true })
+	if needsReschedule, _ := reconcileStatus.NeedsReschedule(); needsReschedule {
+		return imageActuator{}, reconcileStatus
+	}
+
+	log := ctrl.LoggerFrom(ctx)
+	clientScope, err := controller.GetScopeFactory().NewClientScopeFromObject(ctx, controller.GetK8sClient(), log, orcObject)
+	if err != nil {
+		return imageActuator{}, progress.WrapError(err)
+	}
+	osClient, err := clientScope.NewImageClient()
+	if err != nil {
+		return imageActuator{}, progress.WrapError(err)
+	}
+
+	return imageActuator{
+		osClient:  osClient,
+		k8sClient: controller.GetK8sClient(),
+	}, nil
 }

@@ -1,205 +1,110 @@
-# Getting started
+This guide walks you through creating your first OpenStack resources with ORC.
 
-## In a nutshell
+## Prerequisites
 
-1. Deploy ORC to your Kubernetes cluster
-1. Create a Kubernetes secret containing a `clouds.yaml`
-1. Create an OpenStackCloud object pointing to that `clouds.yaml`
-1. Deploy your OpenStack infrastructure as Kubernetes custom resources
+- ORC installed in your Kubernetes cluster (see [Installation](installation.md))
+- A Kubernetes secret with your OpenStack credentials
 
-## Deploy ORC to your Kubernetes cluster
+## Set Up Credentials
 
-From the git repository, run:
+Create a secret containing your OpenStack `clouds.yaml`:
 
-```sh
-make deploy IMG=quay.io/orc/openstack-resource-controller
-```
-
-## Create a Kubernetes secret containing a `clouds.yaml`
-
-```sh
+```bash
 kubectl create secret generic openstack-clouds \
-    --from-file=${XDG_CONFIG_HOME}/openstack/clouds.yaml
+    --from-file=clouds.yaml=/path/to/your/clouds.yaml
 ```
 
-**Note:**
-> The command above will upload your entire `clouds.yaml` to your Kubernetes
-> cluster! If that is not appropriate, you may want to upload a slimmed version
-> of it.
+!!! tip
 
-## Create an OpenStackCloud object pointing to that `clouds.yaml`
+    You can download your `clouds.yaml` from the OpenStack dashboard under
+    **API Access** → **Download OpenStack RC File** → **clouds.yaml**.
 
-Your `clouds.yaml` contains a YAML dictionary of one or more clouds. If the
-name of the cloud you want to target is, for example, `openstack-one`, your
-OpenStackCloud object should look like this:
+## Create Your First Resource
 
-```sh
-kubectl apply -f- <<EOF
+Let's create a network and subnet. First, create the network:
+
+```yaml
+kubectl apply --server-side -f- <<EOF
 apiVersion: openstack.k-orc.cloud/v1alpha1
-kind: OpenStackCloud
+kind: Network
 metadata:
-  labels:
-    app.kubernetes.io/name: openstackcloud
-    app.kubernetes.io/instance: openstackcloud-gettingstarted
-    app.kubernetes.io/part-of: gettingstarted
-  name: osp1
+  name: my-network
 spec:
-  cloud: openstack-one # <-- replace with your cloud name in clouds.yaml
-  credentials:
-    source: secret
-    secretRef:
-      name: openstack-clouds
-      key: clouds.yaml
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    description: My first ORC network
 EOF
 ```
 
-Check that the resource is ready in Kubernetes:
-
-```sh
-kubectl get OpenStackCloud osp1
-```
-
-If the credentials are valid, you get:
-```plaintext
-$ kubectl get OpenStackCloud osp1
-NAME   READY   ERROR   STATUS
-osp1   True    False   Ready
-```
-
-## Deploy your OpenStack infrastructure as Kubernetes custom resources
-
-This is the definition of a subnet. You can apply it to your cloud:
+Now create a subnet on that network:
 
 ```yaml
-kubectl apply -f- <<EOF
+kubectl apply --server-side -f- <<EOF
 apiVersion: openstack.k-orc.cloud/v1alpha1
-kind: OpenStackSubnet
+kind: Subnet
 metadata:
-  labels:
-    app.kubernetes.io/name: openstacksubnet
-    app.kubernetes.io/instance: openstacksubnet-gettingstarted
-    app.kubernetes.io/part-of: gettingstarted
-  name: subnet-1
+  name: my-subnet
 spec:
-  cloud: osp1
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
   resource:
-    name: subnet-1
-    network: network-1
-    allocationPools:
-    - start: 192.168.1.5
-      end: 192.168.1.60
+    networkRef: my-network
     cidr: 192.168.1.0/24
-    ipVersion: IPv4
+    ipVersion: 4
 EOF
 ```
 
-The controller will only attempt creating the subnet when the corresponding
-OpenStackNetwork exists:
+!!! note
 
-```plaintext
-$ kubectl get openstacksubnet
-NAME       READY   ERROR   STATUS
-subnet-1   False   False   Waiting for the following dependencies to be ready: network:default/network-1
-```
+    ORC automatically handles dependencies. If you create the subnet before
+    the network, it will wait:
 
-Let's create it:
-
-```yaml
-kubectl apply -f- <<EOF
-apiVersion: openstack.k-orc.cloud/v1alpha1
-kind: OpenStackNetwork
-metadata:
-  labels:
-    app.kubernetes.io/name: openstacknetwork
-    app.kubernetes.io/instance: openstacknetwork-gettingstarted
-    app.kubernetes.io/part-of: gettingstarted
-  name: network-1
-spec:
-  cloud: osp1
-  resource:
-    name: network-1
-EOF
-```
+    ```
+    $ kubectl get subnets
+    NAME        AVAILABLE   MESSAGE
+    my-subnet   False       Waiting for Network/my-network to be created
+    ```
 
 After a few seconds, both resources become ready:
 
-```plaintext
-$ kubectl get openstacknetwork
-NAME        READY   ERROR   STATUS
-network-1   True    False   Ready
+```
+$ kubectl get networks,subnets
+NAME         AVAILABLE   MESSAGE
+my-network   True        OpenStack resource is available
 
-$ kubectl get openstacksubnet
-NAME       READY   ERROR   STATUS
-subnet-1   True    False   Ready
+NAME        AVAILABLE   MESSAGE
+my-subnet   True        OpenStack resource is available
 ```
 
-The subnet can be inspected through its Kubernetes representation, under
-`.status.resource`:
+## Inspect Resource Status
 
-```sh
-kubectl get openstacksubnet subnet-1 -o yaml
+View the full status including OpenStack-assigned fields:
+
+```bash
+kubectl get subnet my-subnet -o yaml
 ```
 
-```yaml
-apiVersion: openstack.k-orc.cloud/v1alpha1
-kind: OpenStackSubnet
-metadata:
-  # [...]
-  finalizers:
-  - openstacksubnet.k-orc.cloud
-  labels:
-    app.kubernetes.io/instance: openstacksubnet-gettingstarted
-    app.kubernetes.io/name: openstacksubnet
-    app.kubernetes.io/part-of: gettingstarted
-    cloud.openstack.k-orc.cloud/osp1: ""
-    network.openstack.k-orc.cloud/network-1: ""
-  name: subnet-1
-  namespace: default
-  uid: 9f256fd8-91fb-4c6d-a1fa-8a4bda1a92f5
-spec:
-  cloud: osp1
-  resource:
-    allocationPools:
-    - end: 192.168.1.60
-      start: 192.168.1.5
-    cidr: 192.168.1.0/24
-    ipVersion: IPv4
-    name: subnet-1
-    network: network-1
-status:
-  conditions:
-  - message: Ready
-    reason: Ready
-    status: "True"
-    type: Ready
-  - message: ""
-    reason: NoError
-    status: "False"
-    type: Error
-  resource:
-    allocationPools:
-    - end: 192.168.1.60
-      start: 192.168.1.5
-    cidr: 192.168.1.0/24
-    enableDHCP: true
-    gatewayIP: 192.168.1.1
-    id: 0e4a1c78-d5c3-4670-88ba-880cb56c4188
-    ipVersion: 4
-    name: subnet-1
-    networkID: 9d4ecc67-ea5b-4344-b919-2051f0255c06
-    projectID: 90dce24f8e6748bfbc319a9223d0a7a6
-    tenantID: 90dce24f8e6748bfbc319a9223d0a7a6
+The `.status.resource` field contains the observed state from OpenStack, including
+fields like `projectID`, `gatewayIP`, and `revisionNumber`.
+
+## Cleanup
+
+Delete the resources:
+
+```bash
+kubectl delete subnet my-subnet
+kubectl delete network my-network
 ```
 
-## Reset
+ORC automatically deletes the corresponding OpenStack resources.
 
-To reset both Kubernetes and Openstack to their original state, delete the
-resources and undeploy ORC:
+## Next Steps
 
-```sh
-kubectl delete OpenStackSubnet subnet-1
-kubectl delete OpenStackNetwork network-1
-kubectl delete OpenStackCloud osp1
-kubectl delete secret openstack-clouds
-make undeploy
-```
+- **[User Guide](user-guide/index.md)** - Learn core concepts like management policies and imports
+- **[CRD Reference](crd-reference.md)** - Full documentation of all resource types
+- **[Troubleshooting](troubleshooting.md)** - Diagnose and fix common issues

@@ -24,7 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
+	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/logging"
 )
 
 type availabilityChanged struct {
@@ -40,7 +41,7 @@ func NewBecameAvailable(log logr.Logger, specimen orcv1alpha1.ObjectWithConditio
 	getObjWithConditions := func(obj client.Object, event string) orcv1alpha1.ObjectWithConditions {
 		objWithConditions, ok := obj.(orcv1alpha1.ObjectWithConditions)
 		if !ok {
-			log.Info("ReadinessChanged got event object which does not implement ObjectWithConditions",
+			log.V(logging.Debug).Info("ReadinessChanged got event object which does not implement ObjectWithConditions",
 				"got", fmt.Sprintf("%T", obj),
 				"expected", fmt.Sprintf("%T", specimen),
 				"event", event)
@@ -56,7 +57,7 @@ func NewBecameAvailable(log logr.Logger, specimen orcv1alpha1.ObjectWithConditio
 		predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				log := log.WithValues("name", e.Object.GetName(), "namespace", e.Object.GetNamespace())
-				log.V(5).Info("Observed create")
+				log.V(logging.Debug).Info("Observed create")
 
 				obj := getObjWithConditions(e.Object, "create")
 				if obj == nil {
@@ -70,7 +71,7 @@ func NewBecameAvailable(log logr.Logger, specimen orcv1alpha1.ObjectWithConditio
 			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				log := log.WithValues("name", e.ObjectOld.GetName(), "namespace", e.ObjectOld.GetNamespace())
-				log.V(5).Info("Observed update")
+				log.V(logging.Debug).Info("Observed update")
 
 				oldObj := getObjWithConditions(e.ObjectOld, "update")
 				newObj := getObjWithConditions(e.ObjectNew, "update")

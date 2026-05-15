@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ limitations under the License.
 package api
 
 import (
-	v1alpha1 "github.com/k-orc/openstack-resource-controller/pkg/clients/informers/externalversions/api/v1alpha1"
-	internalinterfaces "github.com/k-orc/openstack-resource-controller/pkg/clients/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/informers/externalversions/api/v1alpha1"
+	internalinterfaces "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

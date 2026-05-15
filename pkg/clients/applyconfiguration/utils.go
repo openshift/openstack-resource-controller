@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ limitations under the License.
 package applyconfiguration
 
 import (
-	v1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
-	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/pkg/clients/applyconfiguration/api/v1alpha1"
-	internal "github.com/k-orc/openstack-resource-controller/pkg/clients/applyconfiguration/internal"
+	v1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
+	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/applyconfiguration/api/v1alpha1"
+	internal "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/applyconfiguration/internal"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	testing "k8s.io/client-go/testing"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 )
 
 // ForKind returns an apply configuration type for the given GroupVersionKind, or nil if no
@@ -32,8 +32,140 @@ import (
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
 	// Group=openstack.k-orc.cloud, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithKind("Address"):
+		return &apiv1alpha1.AddressApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AddressScope"):
+		return &apiv1alpha1.AddressScopeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AddressScopeFilter"):
+		return &apiv1alpha1.AddressScopeFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AddressScopeImport"):
+		return &apiv1alpha1.AddressScopeImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AddressScopeResourceSpec"):
+		return &apiv1alpha1.AddressScopeResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AddressScopeResourceStatus"):
+		return &apiv1alpha1.AddressScopeResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AddressScopeSpec"):
+		return &apiv1alpha1.AddressScopeSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AddressScopeStatus"):
+		return &apiv1alpha1.AddressScopeStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AllocationPool"):
+		return &apiv1alpha1.AllocationPoolApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AllocationPoolStatus"):
+		return &apiv1alpha1.AllocationPoolStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AllowedAddressPair"):
+		return &apiv1alpha1.AllowedAddressPairApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AllowedAddressPairStatus"):
+		return &apiv1alpha1.AllowedAddressPairStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredential"):
+		return &apiv1alpha1.ApplicationCredentialApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialAccessRule"):
+		return &apiv1alpha1.ApplicationCredentialAccessRuleApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialAccessRuleStatus"):
+		return &apiv1alpha1.ApplicationCredentialAccessRuleStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialFilter"):
+		return &apiv1alpha1.ApplicationCredentialFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialImport"):
+		return &apiv1alpha1.ApplicationCredentialImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialResourceSpec"):
+		return &apiv1alpha1.ApplicationCredentialResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialResourceStatus"):
+		return &apiv1alpha1.ApplicationCredentialResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialRoleStatus"):
+		return &apiv1alpha1.ApplicationCredentialRoleStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialSpec"):
+		return &apiv1alpha1.ApplicationCredentialSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ApplicationCredentialStatus"):
+		return &apiv1alpha1.ApplicationCredentialStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CloudCredentialsReference"):
 		return &apiv1alpha1.CloudCredentialsReferenceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Domain"):
+		return &apiv1alpha1.DomainApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DomainFilter"):
+		return &apiv1alpha1.DomainFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DomainImport"):
+		return &apiv1alpha1.DomainImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DomainResourceSpec"):
+		return &apiv1alpha1.DomainResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DomainResourceStatus"):
+		return &apiv1alpha1.DomainResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DomainSpec"):
+		return &apiv1alpha1.DomainSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DomainStatus"):
+		return &apiv1alpha1.DomainStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Endpoint"):
+		return &apiv1alpha1.EndpointApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EndpointFilter"):
+		return &apiv1alpha1.EndpointFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EndpointImport"):
+		return &apiv1alpha1.EndpointImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EndpointResourceSpec"):
+		return &apiv1alpha1.EndpointResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EndpointResourceStatus"):
+		return &apiv1alpha1.EndpointResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EndpointSpec"):
+		return &apiv1alpha1.EndpointSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("EndpointStatus"):
+		return &apiv1alpha1.EndpointStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExternalGateway"):
+		return &apiv1alpha1.ExternalGatewayApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ExternalGatewayStatus"):
+		return &apiv1alpha1.ExternalGatewayStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FilterByKeystoneTags"):
+		return &apiv1alpha1.FilterByKeystoneTagsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FilterByNeutronTags"):
+		return &apiv1alpha1.FilterByNeutronTagsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FilterByServerTags"):
+		return &apiv1alpha1.FilterByServerTagsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FixedIPStatus"):
+		return &apiv1alpha1.FixedIPStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Flavor"):
+		return &apiv1alpha1.FlavorApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FlavorFilter"):
+		return &apiv1alpha1.FlavorFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FlavorImport"):
+		return &apiv1alpha1.FlavorImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FlavorResourceSpec"):
+		return &apiv1alpha1.FlavorResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FlavorResourceStatus"):
+		return &apiv1alpha1.FlavorResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FlavorSpec"):
+		return &apiv1alpha1.FlavorSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FlavorStatus"):
+		return &apiv1alpha1.FlavorStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FloatingIP"):
+		return &apiv1alpha1.FloatingIPApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FloatingIPFilter"):
+		return &apiv1alpha1.FloatingIPFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FloatingIPImport"):
+		return &apiv1alpha1.FloatingIPImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FloatingIPResourceSpec"):
+		return &apiv1alpha1.FloatingIPResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FloatingIPResourceStatus"):
+		return &apiv1alpha1.FloatingIPResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FloatingIPSpec"):
+		return &apiv1alpha1.FloatingIPSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FloatingIPStatus"):
+		return &apiv1alpha1.FloatingIPStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Group"):
+		return &apiv1alpha1.GroupApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GroupFilter"):
+		return &apiv1alpha1.GroupFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GroupImport"):
+		return &apiv1alpha1.GroupImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GroupResourceSpec"):
+		return &apiv1alpha1.GroupResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GroupResourceStatus"):
+		return &apiv1alpha1.GroupResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GroupSpec"):
+		return &apiv1alpha1.GroupSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GroupStatus"):
+		return &apiv1alpha1.GroupStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HostID"):
+		return &apiv1alpha1.HostIDApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HostRoute"):
+		return &apiv1alpha1.HostRouteApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HostRouteStatus"):
+		return &apiv1alpha1.HostRouteStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Image"):
 		return &apiv1alpha1.ImageApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ImageContent"):
@@ -50,6 +182,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ImagePropertiesApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ImagePropertiesHardware"):
 		return &apiv1alpha1.ImagePropertiesHardwareApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ImagePropertiesOperatingSystem"):
+		return &apiv1alpha1.ImagePropertiesOperatingSystemApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ImageResourceSpec"):
 		return &apiv1alpha1.ImageResourceSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ImageResourceStatus"):
@@ -60,13 +194,279 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ImageStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ImageStatusExtra"):
 		return &apiv1alpha1.ImageStatusExtraApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("IPv6Options"):
+		return &apiv1alpha1.IPv6OptionsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KeyPair"):
+		return &apiv1alpha1.KeyPairApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KeyPairFilter"):
+		return &apiv1alpha1.KeyPairFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KeyPairImport"):
+		return &apiv1alpha1.KeyPairImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KeyPairResourceSpec"):
+		return &apiv1alpha1.KeyPairResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KeyPairResourceStatus"):
+		return &apiv1alpha1.KeyPairResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KeyPairSpec"):
+		return &apiv1alpha1.KeyPairSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("KeyPairStatus"):
+		return &apiv1alpha1.KeyPairStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ManagedOptions"):
 		return &apiv1alpha1.ManagedOptionsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Network"):
+		return &apiv1alpha1.NetworkApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NetworkFilter"):
+		return &apiv1alpha1.NetworkFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NetworkImport"):
+		return &apiv1alpha1.NetworkImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NetworkResourceSpec"):
+		return &apiv1alpha1.NetworkResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NetworkResourceStatus"):
+		return &apiv1alpha1.NetworkResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NetworkSpec"):
+		return &apiv1alpha1.NetworkSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NetworkStatus"):
+		return &apiv1alpha1.NetworkStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("NeutronStatusMetadata"):
+		return &apiv1alpha1.NeutronStatusMetadataApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Port"):
+		return &apiv1alpha1.PortApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortFilter"):
+		return &apiv1alpha1.PortFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortImport"):
+		return &apiv1alpha1.PortImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortRangeSpec"):
+		return &apiv1alpha1.PortRangeSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortRangeStatus"):
+		return &apiv1alpha1.PortRangeStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortResourceSpec"):
+		return &apiv1alpha1.PortResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortResourceStatus"):
+		return &apiv1alpha1.PortResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortSpec"):
+		return &apiv1alpha1.PortSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PortStatus"):
+		return &apiv1alpha1.PortStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Project"):
+		return &apiv1alpha1.ProjectApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProjectFilter"):
+		return &apiv1alpha1.ProjectFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProjectImport"):
+		return &apiv1alpha1.ProjectImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProjectResourceSpec"):
+		return &apiv1alpha1.ProjectResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProjectResourceStatus"):
+		return &apiv1alpha1.ProjectResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProjectSpec"):
+		return &apiv1alpha1.ProjectSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProjectStatus"):
+		return &apiv1alpha1.ProjectStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ProviderPropertiesStatus"):
+		return &apiv1alpha1.ProviderPropertiesStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Role"):
+		return &apiv1alpha1.RoleApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RoleFilter"):
+		return &apiv1alpha1.RoleFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RoleImport"):
+		return &apiv1alpha1.RoleImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RoleResourceSpec"):
+		return &apiv1alpha1.RoleResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RoleResourceStatus"):
+		return &apiv1alpha1.RoleResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RoleSpec"):
+		return &apiv1alpha1.RoleSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RoleStatus"):
+		return &apiv1alpha1.RoleStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Router"):
+		return &apiv1alpha1.RouterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterFilter"):
+		return &apiv1alpha1.RouterFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterImport"):
+		return &apiv1alpha1.RouterImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterInterface"):
+		return &apiv1alpha1.RouterInterfaceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterInterfaceSpec"):
+		return &apiv1alpha1.RouterInterfaceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterInterfaceStatus"):
+		return &apiv1alpha1.RouterInterfaceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterResourceSpec"):
+		return &apiv1alpha1.RouterResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterResourceStatus"):
+		return &apiv1alpha1.RouterResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterSpec"):
+		return &apiv1alpha1.RouterSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RouterStatus"):
+		return &apiv1alpha1.RouterStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroup"):
+		return &apiv1alpha1.SecurityGroupApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupFilter"):
+		return &apiv1alpha1.SecurityGroupFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupImport"):
+		return &apiv1alpha1.SecurityGroupImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupResourceSpec"):
+		return &apiv1alpha1.SecurityGroupResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupResourceStatus"):
+		return &apiv1alpha1.SecurityGroupResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupRule"):
+		return &apiv1alpha1.SecurityGroupRuleApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupRuleStatus"):
+		return &apiv1alpha1.SecurityGroupRuleStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupSpec"):
+		return &apiv1alpha1.SecurityGroupSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SecurityGroupStatus"):
+		return &apiv1alpha1.SecurityGroupStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Server"):
+		return &apiv1alpha1.ServerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerFilter"):
+		return &apiv1alpha1.ServerFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroup"):
+		return &apiv1alpha1.ServerGroupApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupFilter"):
+		return &apiv1alpha1.ServerGroupFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupImport"):
+		return &apiv1alpha1.ServerGroupImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupResourceSpec"):
+		return &apiv1alpha1.ServerGroupResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupResourceStatus"):
+		return &apiv1alpha1.ServerGroupResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupRules"):
+		return &apiv1alpha1.ServerGroupRulesApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupRulesStatus"):
+		return &apiv1alpha1.ServerGroupRulesStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupSpec"):
+		return &apiv1alpha1.ServerGroupSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerGroupStatus"):
+		return &apiv1alpha1.ServerGroupStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerImport"):
+		return &apiv1alpha1.ServerImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerInterfaceFixedIP"):
+		return &apiv1alpha1.ServerInterfaceFixedIPApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerInterfaceStatus"):
+		return &apiv1alpha1.ServerInterfaceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerMetadata"):
+		return &apiv1alpha1.ServerMetadataApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerMetadataStatus"):
+		return &apiv1alpha1.ServerMetadataStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerPortSpec"):
+		return &apiv1alpha1.ServerPortSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerResourceSpec"):
+		return &apiv1alpha1.ServerResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerResourceStatus"):
+		return &apiv1alpha1.ServerResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerSpec"):
+		return &apiv1alpha1.ServerSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerStatus"):
+		return &apiv1alpha1.ServerStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerVolumeSpec"):
+		return &apiv1alpha1.ServerVolumeSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServerVolumeStatus"):
+		return &apiv1alpha1.ServerVolumeStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Service"):
+		return &apiv1alpha1.ServiceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceFilter"):
+		return &apiv1alpha1.ServiceFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceImport"):
+		return &apiv1alpha1.ServiceImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceResourceSpec"):
+		return &apiv1alpha1.ServiceResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceResourceStatus"):
+		return &apiv1alpha1.ServiceResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceSpec"):
+		return &apiv1alpha1.ServiceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ServiceStatus"):
+		return &apiv1alpha1.ServiceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Subnet"):
+		return &apiv1alpha1.SubnetApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SubnetFilter"):
+		return &apiv1alpha1.SubnetFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SubnetGateway"):
+		return &apiv1alpha1.SubnetGatewayApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SubnetImport"):
+		return &apiv1alpha1.SubnetImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SubnetResourceSpec"):
+		return &apiv1alpha1.SubnetResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SubnetResourceStatus"):
+		return &apiv1alpha1.SubnetResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SubnetSpec"):
+		return &apiv1alpha1.SubnetSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SubnetStatus"):
+		return &apiv1alpha1.SubnetStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Trunk"):
+		return &apiv1alpha1.TrunkApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkFilter"):
+		return &apiv1alpha1.TrunkFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkImport"):
+		return &apiv1alpha1.TrunkImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkResourceSpec"):
+		return &apiv1alpha1.TrunkResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkResourceStatus"):
+		return &apiv1alpha1.TrunkResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkSpec"):
+		return &apiv1alpha1.TrunkSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkStatus"):
+		return &apiv1alpha1.TrunkStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkSubportSpec"):
+		return &apiv1alpha1.TrunkSubportSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("TrunkSubportStatus"):
+		return &apiv1alpha1.TrunkSubportStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("User"):
+		return &apiv1alpha1.UserApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UserDataSpec"):
+		return &apiv1alpha1.UserDataSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UserFilter"):
+		return &apiv1alpha1.UserFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UserImport"):
+		return &apiv1alpha1.UserImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UserResourceSpec"):
+		return &apiv1alpha1.UserResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UserResourceStatus"):
+		return &apiv1alpha1.UserResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UserSpec"):
+		return &apiv1alpha1.UserSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("UserStatus"):
+		return &apiv1alpha1.UserStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Volume"):
+		return &apiv1alpha1.VolumeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeAttachmentStatus"):
+		return &apiv1alpha1.VolumeAttachmentStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeFilter"):
+		return &apiv1alpha1.VolumeFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeImport"):
+		return &apiv1alpha1.VolumeImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeMetadata"):
+		return &apiv1alpha1.VolumeMetadataApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeMetadataStatus"):
+		return &apiv1alpha1.VolumeMetadataStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeResourceSpec"):
+		return &apiv1alpha1.VolumeResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeResourceStatus"):
+		return &apiv1alpha1.VolumeResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeSpec"):
+		return &apiv1alpha1.VolumeSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeStatus"):
+		return &apiv1alpha1.VolumeStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeType"):
+		return &apiv1alpha1.VolumeTypeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeExtraSpec"):
+		return &apiv1alpha1.VolumeTypeExtraSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeExtraSpecStatus"):
+		return &apiv1alpha1.VolumeTypeExtraSpecStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeFilter"):
+		return &apiv1alpha1.VolumeTypeFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeImport"):
+		return &apiv1alpha1.VolumeTypeImportApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeResourceSpec"):
+		return &apiv1alpha1.VolumeTypeResourceSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeResourceStatus"):
+		return &apiv1alpha1.VolumeTypeResourceStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeSpec"):
+		return &apiv1alpha1.VolumeTypeSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VolumeTypeStatus"):
+		return &apiv1alpha1.VolumeTypeStatusApplyConfiguration{}
 
 	}
 	return nil
 }
 
-func NewTypeConverter(scheme *runtime.Scheme) *testing.TypeConverter {
-	return &testing.TypeConverter{Scheme: scheme, TypeResolver: internal.Parser()}
+func NewTypeConverter(scheme *runtime.Scheme) managedfields.TypeConverter {
+	return managedfields.NewSchemeTypeConverter(scheme, internal.Parser())
 }

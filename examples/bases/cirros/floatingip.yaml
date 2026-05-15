@@ -1,0 +1,14 @@
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: FloatingIP
+metadata:
+  name: floatingip
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: cloud-config
+  managementPolicy: managed
+  resource:
+    floatingNetworkRef: external-network
+    portRef: port
+    tags:
+      - tag1

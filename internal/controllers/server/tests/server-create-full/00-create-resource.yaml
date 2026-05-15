@@ -1,0 +1,56 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Port
+metadata:
+  name: server-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    networkRef: server-create-full
+    addresses:
+      - subnetRef: server-create-full
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Volume
+metadata:
+  name: server-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    size: 1
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Server
+metadata:
+  name: server-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    name: server-create-full-override
+    imageRef: server-create-full
+    flavorRef: server-create-full
+    ports:
+      - portRef: server-create-full
+    serverGroupRef: server-create-full
+    keypairRef: server-create-full
+    volumes:
+      - volumeRef: server-create-full
+    availabilityZone: nova
+    tags:
+      - tag1
+      - tag2
+    metadata:
+      - key: environment
+        value: test
+      - key: owner
+        value: kuttl
+    configDrive: true

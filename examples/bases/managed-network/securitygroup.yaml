@@ -1,0 +1,28 @@
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: SecurityGroup
+metadata:
+  name: orc-managed-sg
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: cloud-config
+  managementPolicy: managed
+  resource:
+    description: Blah blah blah
+    stateful: true
+    tags:
+      - orc-test
+    rules:
+      - direction: ingress
+        protocol: tcp
+        ethertype: IPv4
+        portRange:
+          min: 21
+          max: 21
+        remoteIPPrefix: "192.168.0.0/24"
+      - direction: egress
+        protocol: tcp
+        ethertype: IPv6
+        portRange:
+          min: 3838
+          max: 3840

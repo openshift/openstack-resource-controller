@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ limitations under the License.
 package mock
 
 import (
+	context "context"
+	iter "iter"
 	reflect "reflect"
 
 	volumes "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v3/volumes"
@@ -35,6 +37,7 @@ import (
 type MockVolumeClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockVolumeClientMockRecorder
+	isgomock struct{}
 }
 
 // MockVolumeClientMockRecorder is the mock recorder for MockVolumeClient.
@@ -55,60 +58,74 @@ func (m *MockVolumeClient) EXPECT() *MockVolumeClientMockRecorder {
 }
 
 // CreateVolume mocks base method.
-func (m *MockVolumeClient) CreateVolume(opts volumes.CreateOptsBuilder) (*volumes.Volume, error) {
+func (m *MockVolumeClient) CreateVolume(ctx context.Context, opts volumes.CreateOptsBuilder) (*volumes.Volume, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateVolume", opts)
+	ret := m.ctrl.Call(m, "CreateVolume", ctx, opts)
 	ret0, _ := ret[0].(*volumes.Volume)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateVolume indicates an expected call of CreateVolume.
-func (mr *MockVolumeClientMockRecorder) CreateVolume(opts any) *gomock.Call {
+func (mr *MockVolumeClientMockRecorder) CreateVolume(ctx, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVolume", reflect.TypeOf((*MockVolumeClient)(nil).CreateVolume), opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVolume", reflect.TypeOf((*MockVolumeClient)(nil).CreateVolume), ctx, opts)
 }
 
 // DeleteVolume mocks base method.
-func (m *MockVolumeClient) DeleteVolume(volumeID string, opts volumes.DeleteOptsBuilder) error {
+func (m *MockVolumeClient) DeleteVolume(ctx context.Context, resourceID string, opts volumes.DeleteOptsBuilder) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteVolume", volumeID, opts)
+	ret := m.ctrl.Call(m, "DeleteVolume", ctx, resourceID, opts)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteVolume indicates an expected call of DeleteVolume.
-func (mr *MockVolumeClientMockRecorder) DeleteVolume(volumeID, opts any) *gomock.Call {
+func (mr *MockVolumeClientMockRecorder) DeleteVolume(ctx, resourceID, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVolume", reflect.TypeOf((*MockVolumeClient)(nil).DeleteVolume), volumeID, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVolume", reflect.TypeOf((*MockVolumeClient)(nil).DeleteVolume), ctx, resourceID, opts)
 }
 
 // GetVolume mocks base method.
-func (m *MockVolumeClient) GetVolume(volumeID string) (*volumes.Volume, error) {
+func (m *MockVolumeClient) GetVolume(ctx context.Context, resourceID string) (*volumes.Volume, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetVolume", volumeID)
+	ret := m.ctrl.Call(m, "GetVolume", ctx, resourceID)
 	ret0, _ := ret[0].(*volumes.Volume)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVolume indicates an expected call of GetVolume.
-func (mr *MockVolumeClientMockRecorder) GetVolume(volumeID any) *gomock.Call {
+func (mr *MockVolumeClientMockRecorder) GetVolume(ctx, resourceID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolume", reflect.TypeOf((*MockVolumeClient)(nil).GetVolume), volumeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolume", reflect.TypeOf((*MockVolumeClient)(nil).GetVolume), ctx, resourceID)
 }
 
 // ListVolumes mocks base method.
-func (m *MockVolumeClient) ListVolumes(opts volumes.ListOptsBuilder) ([]volumes.Volume, error) {
+func (m *MockVolumeClient) ListVolumes(ctx context.Context, listOpts volumes.ListOptsBuilder) iter.Seq2[*volumes.Volume, error] {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListVolumes", opts)
-	ret0, _ := ret[0].([]volumes.Volume)
+	ret := m.ctrl.Call(m, "ListVolumes", ctx, listOpts)
+	ret0, _ := ret[0].(iter.Seq2[*volumes.Volume, error])
+	return ret0
+}
+
+// ListVolumes indicates an expected call of ListVolumes.
+func (mr *MockVolumeClientMockRecorder) ListVolumes(ctx, listOpts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVolumes", reflect.TypeOf((*MockVolumeClient)(nil).ListVolumes), ctx, listOpts)
+}
+
+// UpdateVolume mocks base method.
+func (m *MockVolumeClient) UpdateVolume(ctx context.Context, id string, opts volumes.UpdateOptsBuilder) (*volumes.Volume, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateVolume", ctx, id, opts)
+	ret0, _ := ret[0].(*volumes.Volume)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListVolumes indicates an expected call of ListVolumes.
-func (mr *MockVolumeClientMockRecorder) ListVolumes(opts any) *gomock.Call {
+// UpdateVolume indicates an expected call of UpdateVolume.
+func (mr *MockVolumeClientMockRecorder) UpdateVolume(ctx, id, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVolumes", reflect.TypeOf((*MockVolumeClient)(nil).ListVolumes), opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVolume", reflect.TypeOf((*MockVolumeClient)(nil).UpdateVolume), ctx, id, opts)
 }

@@ -1,0 +1,74 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+resourceRefs:
+    - apiVersion: openstack.k-orc.cloud/v1alpha1
+      kind: Subnet
+      name: subnet-create-full-v4
+      ref: subnet
+    - apiVersion: openstack.k-orc.cloud/v1alpha1
+      kind: Network
+      name: subnet-create-full-v4
+      ref: network
+    - apiVersion: openstack.k-orc.cloud/v1alpha1
+      kind: project
+      name: subnet-create-full-v4
+      ref: project
+assertAll:
+    - celExpr: "subnet.status.id != ''"
+    # - celExpr: "subnet.status.resource.createdAt != ''"
+    # - celExpr: "subnet.status.resource.updatedAt != ''"
+    # - celExpr: "subnet.status.resource.revisionNumber > 0"
+    - celExpr: "subnet.status.resource.networkID == network.status.id"
+    - celExpr: "subnet.status.resource.projectID == project.status.id"
+    - celExpr: "'ipv6AddressMode' in subnet.status.resource == false"
+    - celExpr: "'ipv6RAMode' in subnet.status.resource == false"
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Subnet
+metadata:
+  name: subnet-create-full-v4
+status:
+  resource:
+    name: subnet-create-full-v4-override
+    description: Subnet from "create full v4" test
+    tags:
+      - tag1
+      - tag2
+    ipVersion: 4
+    cidr: 192.168.1.0/24
+    allocationPools:
+      - start: 192.168.1.10
+        end: 192.168.1.15
+    gatewayIP: 192.168.1.2
+    enableDHCP: false
+    dnsNameservers:
+      - 1.1.1.1
+      - 8.8.8.8
+    # FIXME: environment doesn't allow to test dnsPublishFixedIP
+    # https://github.com/k-orc/openstack-resource-controller/issues/189
+    dnsPublishFixedIP: false
+    hostRoutes:
+      - destination: 192.168.3.0/24
+        nextHop: 192.168.4.1
+      - destination: 192.168.5.0/24
+        nextHop: 192.168.6.1
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: RouterInterface
+metadata:
+  name: subnet-create-full-v4-subnet
+spec:
+  routerRef: subnet-create-full-v4
+  subnetRef: subnet-create-full-v4
+  type: Subnet
+status:
+  conditions:
+    - type: Available
+      message: OpenStack resource is available
+      status: "True"
+      reason: Success
+    - type: Progressing
+      message: OpenStack resource is up to date
+      status: "False"
+      reason: Success

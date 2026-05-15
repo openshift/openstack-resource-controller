@@ -4,9 +4,29 @@ site_name: openstack-resource-controller
 site_url: https://k-orc.cloud/
 nav:
   - Home: index.md
-  - Getting started: getting-started.md
-  - Reference: reference.md
-  - Design decisions: design-decisions.md
+  - Getting Started:
+    - Installation: installation.md
+    - Quick Start: getting-started.md
+  - User Guide: user-guide/index.md
+  - CRD Reference: crd-reference.md
+  - Troubleshooting: troubleshooting.md
+  - Contributing:
+    - Development Quickstart: development/quickstart.md
+    - Running Examples: development/running-examples.md
+    - Developing Controllers:
+      - Overview: development/overview.md
+      - Scaffolding a New Controller: development/scaffolding.md
+      - API Design: development/api-design.md
+      - Controller Initialisation: development/controller-init.md
+      - Resource Interfaces: development/interfaces.md
+      - Controller Implementation: development/controller-implementation.md
+      - Writing Tests: development/writing-tests.md
+    - Reference:
+      - Architecture: development/architecture.md
+      - Coding Standards: development/coding-standards.md
+      - Interfaces: development/godoc/generic-interfaces.md
+      - ReconcileStatus: development/godoc/reconcile-status.md
+  - Changelog: changelog.md
 repo_url: https://github.com/k-orc/openstack-resource-controller
 extra:
   analytics:
@@ -22,6 +42,14 @@ hooks:
 theme:
   name: material
   custom_dir: overrides
+  features:
+    - navigation.footer
+    - navigation.indexes
+    - navigation.expand
+    - navigation.sections
+    - content.code.copy
+    - search.highlight
+    - search.suggest
 plugins:
   - search:
   - minify:
@@ -34,3 +62,18 @@ plugins:
   - redirects:
       redirect_maps:
         'getting_started.md': 'getting-started.md'
+        'development/index.md': 'development/overview.md'
+        'development/controller-design.md': 'development/controller-implementation.md'
+        'development/design-decisions.md': 'development/architecture.md'
+        'development/coding-convention.md': 'development/coding-standards.md'
+        'development/api-contracts.md': 'development/api-design.md'
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
