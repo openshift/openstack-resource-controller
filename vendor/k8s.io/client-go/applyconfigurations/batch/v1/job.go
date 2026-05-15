@@ -1,5 +1,5 @@
 /*
-Copyright The ORC Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,22 +19,21 @@ limitations under the License.
 package v1
 
 import (
-	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
-	internal "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/applyconfiguration/internal"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	internal "k8s.io/client-go/applyconfigurations/internal"
-	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // JobApplyConfiguration represents a declarative configuration of the Job type for use
 // with apply.
 type JobApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration    `json:",inline"`
-	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *JobSpecApplyConfiguration   `json:"spec,omitempty"`
-	Status                           *JobStatusApplyConfiguration `json:"status,omitempty"`
+	metav1.TypeMetaApplyConfiguration    `json:",inline"`
+	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
+	Spec                                 *JobSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                               *JobStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // Job constructs a declarative configuration of the Job type for use with
@@ -59,20 +58,20 @@ func Job(name, namespace string) *JobApplyConfiguration {
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
 // Experimental!
-func ExtractJob(job *apibatchv1.Job, fieldManager string) (*JobApplyConfiguration, error) {
+func ExtractJob(job *batchv1.Job, fieldManager string) (*JobApplyConfiguration, error) {
 	return extractJob(job, fieldManager, "")
 }
 
 // ExtractJobStatus is the same as ExtractJob except
 // that it extracts the status subresource applied configuration.
 // Experimental!
-func ExtractJobStatus(job *apibatchv1.Job, fieldManager string) (*JobApplyConfiguration, error) {
+func ExtractJobStatus(job *batchv1.Job, fieldManager string) (*JobApplyConfiguration, error) {
 	return extractJob(job, fieldManager, "status")
 }
 
-func extractSubnet(subnet *apiv1alpha1.Subnet, fieldManager string, subresource string) (*SubnetApplyConfiguration, error) {
-	b := &SubnetApplyConfiguration{}
-	err := managedfields.ExtractInto(subnet, internal.Parser().Type("com.github.k-orc.openstack-resource-controller.v2.api.v1alpha1.Subnet"), fieldManager, b, subresource)
+func extractJob(job *batchv1.Job, fieldManager string, subresource string) (*JobApplyConfiguration, error) {
+	b := &JobApplyConfiguration{}
+	err := managedfields.ExtractInto(job, internal.Parser().Type("io.k8s.api.batch.v1.Job"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +82,12 @@ func extractSubnet(subnet *apiv1alpha1.Subnet, fieldManager string, subresource 
 	b.WithAPIVersion("batch/v1")
 	return b, nil
 }
-func (b SubnetApplyConfiguration) IsApplyConfiguration() {}
+func (b JobApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *SubnetApplyConfiguration) WithKind(value string) *SubnetApplyConfiguration {
+func (b *JobApplyConfiguration) WithKind(value string) *JobApplyConfiguration {
 	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
@@ -96,7 +95,7 @@ func (b *SubnetApplyConfiguration) WithKind(value string) *SubnetApplyConfigurat
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *SubnetApplyConfiguration) WithAPIVersion(value string) *SubnetApplyConfiguration {
+func (b *JobApplyConfiguration) WithAPIVersion(value string) *JobApplyConfiguration {
 	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
@@ -158,7 +157,7 @@ func (b *JobApplyConfiguration) WithGeneration(value int64) *JobApplyConfigurati
 // WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
-func (b *JobApplyConfiguration) WithCreationTimestamp(value metav1.Time) *JobApplyConfiguration {
+func (b *JobApplyConfiguration) WithCreationTimestamp(value apismetav1.Time) *JobApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
@@ -167,7 +166,7 @@ func (b *JobApplyConfiguration) WithCreationTimestamp(value metav1.Time) *JobApp
 // WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
-func (b *JobApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *JobApplyConfiguration {
+func (b *JobApplyConfiguration) WithDeletionTimestamp(value apismetav1.Time) *JobApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
@@ -215,7 +214,7 @@ func (b *JobApplyConfiguration) WithAnnotations(entries map[string]string) *JobA
 // WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the OwnerReferences field.
-func (b *JobApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *JobApplyConfiguration {
+func (b *JobApplyConfiguration) WithOwnerReferences(values ...*metav1.OwnerReferenceApplyConfiguration) *JobApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		if values[i] == nil {
@@ -239,7 +238,7 @@ func (b *JobApplyConfiguration) WithFinalizers(values ...string) *JobApplyConfig
 
 func (b *JobApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
 	if b.ObjectMetaApplyConfiguration == nil {
-		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
+		b.ObjectMetaApplyConfiguration = &metav1.ObjectMetaApplyConfiguration{}
 	}
 }
 
@@ -260,12 +259,12 @@ func (b *JobApplyConfiguration) WithStatus(value *JobStatusApplyConfiguration) *
 }
 
 // GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *SubnetApplyConfiguration) GetKind() *string {
+func (b *JobApplyConfiguration) GetKind() *string {
 	return b.TypeMetaApplyConfiguration.Kind
 }
 
 // GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *SubnetApplyConfiguration) GetAPIVersion() *string {
+func (b *JobApplyConfiguration) GetAPIVersion() *string {
 	return b.TypeMetaApplyConfiguration.APIVersion
 }
 
@@ -276,7 +275,7 @@ func (b *JobApplyConfiguration) GetName() *string {
 }
 
 // GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *SubnetApplyConfiguration) GetNamespace() *string {
+func (b *JobApplyConfiguration) GetNamespace() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Namespace
 }

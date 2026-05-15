@@ -1,5 +1,5 @@
 /*
-Copyright The ORC Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,22 +19,21 @@ limitations under the License.
 package v1
 
 import (
-	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
-	internal "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/applyconfiguration/internal"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	internal "k8s.io/client-go/applyconfigurations/internal"
-	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 // NodeApplyConfiguration represents a declarative configuration of the Node type for use
 // with apply.
 type NodeApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration    `json:",inline"`
-	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *NodeSpecApplyConfiguration   `json:"spec,omitempty"`
-	Status                           *NodeStatusApplyConfiguration `json:"status,omitempty"`
+	metav1.TypeMetaApplyConfiguration    `json:",inline"`
+	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
+	Spec                                 *NodeSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                               *NodeStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // Node constructs a declarative configuration of the Node type for use with
@@ -58,20 +57,20 @@ func Node(name string) *NodeApplyConfiguration {
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
 // Experimental!
-func ExtractNode(node *apicorev1.Node, fieldManager string) (*NodeApplyConfiguration, error) {
+func ExtractNode(node *corev1.Node, fieldManager string) (*NodeApplyConfiguration, error) {
 	return extractNode(node, fieldManager, "")
 }
 
 // ExtractNodeStatus is the same as ExtractNode except
 // that it extracts the status subresource applied configuration.
 // Experimental!
-func ExtractNodeStatus(node *apicorev1.Node, fieldManager string) (*NodeApplyConfiguration, error) {
+func ExtractNodeStatus(node *corev1.Node, fieldManager string) (*NodeApplyConfiguration, error) {
 	return extractNode(node, fieldManager, "status")
 }
 
-func extractPort(port *apiv1alpha1.Port, fieldManager string, subresource string) (*PortApplyConfiguration, error) {
-	b := &PortApplyConfiguration{}
-	err := managedfields.ExtractInto(port, internal.Parser().Type("com.github.k-orc.openstack-resource-controller.v2.api.v1alpha1.Port"), fieldManager, b, subresource)
+func extractNode(node *corev1.Node, fieldManager string, subresource string) (*NodeApplyConfiguration, error) {
+	b := &NodeApplyConfiguration{}
+	err := managedfields.ExtractInto(node, internal.Parser().Type("io.k8s.api.core.v1.Node"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -81,12 +80,12 @@ func extractPort(port *apiv1alpha1.Port, fieldManager string, subresource string
 	b.WithAPIVersion("v1")
 	return b, nil
 }
-func (b PortApplyConfiguration) IsApplyConfiguration() {}
+func (b NodeApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *PortApplyConfiguration) WithKind(value string) *PortApplyConfiguration {
+func (b *NodeApplyConfiguration) WithKind(value string) *NodeApplyConfiguration {
 	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
@@ -94,7 +93,7 @@ func (b *PortApplyConfiguration) WithKind(value string) *PortApplyConfiguration 
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *PortApplyConfiguration) WithAPIVersion(value string) *PortApplyConfiguration {
+func (b *NodeApplyConfiguration) WithAPIVersion(value string) *NodeApplyConfiguration {
 	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
@@ -156,7 +155,7 @@ func (b *NodeApplyConfiguration) WithGeneration(value int64) *NodeApplyConfigura
 // WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
-func (b *NodeApplyConfiguration) WithCreationTimestamp(value metav1.Time) *NodeApplyConfiguration {
+func (b *NodeApplyConfiguration) WithCreationTimestamp(value apismetav1.Time) *NodeApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
@@ -165,7 +164,7 @@ func (b *NodeApplyConfiguration) WithCreationTimestamp(value metav1.Time) *NodeA
 // WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
-func (b *NodeApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *NodeApplyConfiguration {
+func (b *NodeApplyConfiguration) WithDeletionTimestamp(value apismetav1.Time) *NodeApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
@@ -213,7 +212,7 @@ func (b *NodeApplyConfiguration) WithAnnotations(entries map[string]string) *Nod
 // WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the OwnerReferences field.
-func (b *NodeApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *NodeApplyConfiguration {
+func (b *NodeApplyConfiguration) WithOwnerReferences(values ...*metav1.OwnerReferenceApplyConfiguration) *NodeApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		if values[i] == nil {
@@ -237,7 +236,7 @@ func (b *NodeApplyConfiguration) WithFinalizers(values ...string) *NodeApplyConf
 
 func (b *NodeApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
 	if b.ObjectMetaApplyConfiguration == nil {
-		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
+		b.ObjectMetaApplyConfiguration = &metav1.ObjectMetaApplyConfiguration{}
 	}
 }
 
@@ -258,12 +257,12 @@ func (b *NodeApplyConfiguration) WithStatus(value *NodeStatusApplyConfiguration)
 }
 
 // GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *PortApplyConfiguration) GetKind() *string {
+func (b *NodeApplyConfiguration) GetKind() *string {
 	return b.TypeMetaApplyConfiguration.Kind
 }
 
 // GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *PortApplyConfiguration) GetAPIVersion() *string {
+func (b *NodeApplyConfiguration) GetAPIVersion() *string {
 	return b.TypeMetaApplyConfiguration.APIVersion
 }
 
@@ -274,7 +273,7 @@ func (b *NodeApplyConfiguration) GetName() *string {
 }
 
 // GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *PortApplyConfiguration) GetNamespace() *string {
+func (b *NodeApplyConfiguration) GetNamespace() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Namespace
 }

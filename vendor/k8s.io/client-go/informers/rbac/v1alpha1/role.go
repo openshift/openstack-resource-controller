@@ -1,5 +1,5 @@
 /*
-Copyright The ORC Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,16 +22,13 @@ import (
 	context "context"
 	time "time"
 
-	v2apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
-	clientset "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset"
-	internalinterfaces "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/informers/externalversions/internalinterfaces"
-	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/listers/api/v1alpha1"
+	apirbacv1alpha1 "k8s.io/api/rbac/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 	kubernetes "k8s.io/client-go/kubernetes"
-	v1alpha1 "k8s.io/client-go/listers/rbac/v1alpha1"
+	rbacv1alpha1 "k8s.io/client-go/listers/rbac/v1alpha1"
 	cache "k8s.io/client-go/tools/cache"
 )
 
@@ -39,7 +36,7 @@ import (
 // Roles.
 type RoleInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() apiv1alpha1.PortLister
+	Lister() rbacv1alpha1.RoleLister
 }
 
 type roleInformer struct {
@@ -65,28 +62,28 @@ func NewFilteredRoleInformer(client kubernetes.Interface, namespace string, resy
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Ports(namespace).List(context.Background(), options)
+				return client.RbacV1alpha1().Roles(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Ports(namespace).Watch(context.Background(), options)
+				return client.RbacV1alpha1().Roles(namespace).Watch(context.Background(), options)
 			},
 			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Ports(namespace).List(ctx, options)
+				return client.RbacV1alpha1().Roles(namespace).List(ctx, options)
 			},
 			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Ports(namespace).Watch(ctx, options)
+				return client.RbacV1alpha1().Roles(namespace).Watch(ctx, options)
 			},
 		},
-		&v2apiv1alpha1.Port{},
+		&apirbacv1alpha1.Role{},
 		resyncPeriod,
 		indexers,
 	)
@@ -96,10 +93,10 @@ func (f *roleInformer) defaultInformer(client kubernetes.Interface, resyncPeriod
 	return NewFilteredRoleInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *portInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&v2apiv1alpha1.Port{}, f.defaultInformer)
+func (f *roleInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apirbacv1alpha1.Role{}, f.defaultInformer)
 }
 
-func (f *portInformer) Lister() apiv1alpha1.PortLister {
-	return apiv1alpha1.NewPortLister(f.Informer().GetIndexer())
+func (f *roleInformer) Lister() rbacv1alpha1.RoleLister {
+	return rbacv1alpha1.NewRoleLister(f.Informer().GetIndexer())
 }

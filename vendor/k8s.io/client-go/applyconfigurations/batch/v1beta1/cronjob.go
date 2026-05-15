@@ -1,5 +1,5 @@
 /*
-Copyright The ORC Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
-	internal "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/applyconfiguration/internal"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
@@ -70,9 +69,9 @@ func ExtractCronJobStatus(cronJob *batchv1beta1.CronJob, fieldManager string) (*
 	return extractCronJob(cronJob, fieldManager, "status")
 }
 
-func extractRouter(router *apiv1alpha1.Router, fieldManager string, subresource string) (*RouterApplyConfiguration, error) {
-	b := &RouterApplyConfiguration{}
-	err := managedfields.ExtractInto(router, internal.Parser().Type("com.github.k-orc.openstack-resource-controller.v2.api.v1alpha1.Router"), fieldManager, b, subresource)
+func extractCronJob(cronJob *batchv1beta1.CronJob, fieldManager string, subresource string) (*CronJobApplyConfiguration, error) {
+	b := &CronJobApplyConfiguration{}
+	err := managedfields.ExtractInto(cronJob, internal.Parser().Type("io.k8s.api.batch.v1beta1.CronJob"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +82,12 @@ func extractRouter(router *apiv1alpha1.Router, fieldManager string, subresource 
 	b.WithAPIVersion("batch/v1beta1")
 	return b, nil
 }
-func (b RouterApplyConfiguration) IsApplyConfiguration() {}
+func (b CronJobApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *RouterApplyConfiguration) WithKind(value string) *RouterApplyConfiguration {
+func (b *CronJobApplyConfiguration) WithKind(value string) *CronJobApplyConfiguration {
 	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
@@ -96,7 +95,7 @@ func (b *RouterApplyConfiguration) WithKind(value string) *RouterApplyConfigurat
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *RouterApplyConfiguration) WithAPIVersion(value string) *RouterApplyConfiguration {
+func (b *CronJobApplyConfiguration) WithAPIVersion(value string) *CronJobApplyConfiguration {
 	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
@@ -260,12 +259,12 @@ func (b *CronJobApplyConfiguration) WithStatus(value *CronJobStatusApplyConfigur
 }
 
 // GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *RouterApplyConfiguration) GetKind() *string {
+func (b *CronJobApplyConfiguration) GetKind() *string {
 	return b.TypeMetaApplyConfiguration.Kind
 }
 
 // GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *RouterApplyConfiguration) GetAPIVersion() *string {
+func (b *CronJobApplyConfiguration) GetAPIVersion() *string {
 	return b.TypeMetaApplyConfiguration.APIVersion
 }
 
@@ -276,7 +275,7 @@ func (b *CronJobApplyConfiguration) GetName() *string {
 }
 
 // GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *RouterApplyConfiguration) GetNamespace() *string {
+func (b *CronJobApplyConfiguration) GetNamespace() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Namespace
 }

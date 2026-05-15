@@ -1,5 +1,5 @@
 /*
-Copyright The ORC Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,16 +22,13 @@ import (
 	context "context"
 	time "time"
 
-	v2apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
-	clientset "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset"
-	internalinterfaces "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/informers/externalversions/internalinterfaces"
-	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/listers/api/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apieventsv1 "k8s.io/api/events/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 	kubernetes "k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/listers/events/v1"
+	eventsv1 "k8s.io/client-go/listers/events/v1"
 	cache "k8s.io/client-go/tools/cache"
 )
 
@@ -39,7 +36,7 @@ import (
 // Events.
 type EventInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() apiv1alpha1.SubnetLister
+	Lister() eventsv1.EventLister
 }
 
 type eventInformer struct {
@@ -65,28 +62,28 @@ func NewFilteredEventInformer(client kubernetes.Interface, namespace string, res
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Subnets(namespace).List(context.Background(), options)
+				return client.EventsV1().Events(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Subnets(namespace).Watch(context.Background(), options)
+				return client.EventsV1().Events(namespace).Watch(context.Background(), options)
 			},
-			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Subnets(namespace).List(ctx, options)
+				return client.EventsV1().Events(namespace).List(ctx, options)
 			},
-			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OpenstackV1alpha1().Subnets(namespace).Watch(ctx, options)
+				return client.EventsV1().Events(namespace).Watch(ctx, options)
 			},
 		},
-		&v2apiv1alpha1.Subnet{},
+		&apieventsv1.Event{},
 		resyncPeriod,
 		indexers,
 	)
@@ -96,10 +93,10 @@ func (f *eventInformer) defaultInformer(client kubernetes.Interface, resyncPerio
 	return NewFilteredEventInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *subnetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&v2apiv1alpha1.Subnet{}, f.defaultInformer)
+func (f *eventInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apieventsv1.Event{}, f.defaultInformer)
 }
 
-func (f *subnetInformer) Lister() apiv1alpha1.SubnetLister {
-	return apiv1alpha1.NewSubnetLister(f.Informer().GetIndexer())
+func (f *eventInformer) Lister() eventsv1.EventLister {
+	return eventsv1.NewEventLister(f.Informer().GetIndexer())
 }
