@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ package mock
 import (
 	context "context"
 	io "io"
+	iter "iter"
 	reflect "reflect"
 
 	imageimport "github.com/gophercloud/gophercloud/v2/openstack/image/v2/imageimport"
@@ -38,6 +39,7 @@ import (
 type MockImageClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockImageClientMockRecorder
+	isgomock struct{}
 }
 
 // MockImageClientMockRecorder is the mock recorder for MockImageClient.
@@ -101,18 +103,18 @@ func (mr *MockImageClientMockRecorder) DeleteImage(ctx, id any) *gomock.Call {
 }
 
 // GetImage mocks base method.
-func (m *MockImageClient) GetImage(id string) (*images.Image, error) {
+func (m *MockImageClient) GetImage(ctx context.Context, id string) (*images.Image, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImage", id)
+	ret := m.ctrl.Call(m, "GetImage", ctx, id)
 	ret0, _ := ret[0].(*images.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetImage indicates an expected call of GetImage.
-func (mr *MockImageClientMockRecorder) GetImage(id any) *gomock.Call {
+func (mr *MockImageClientMockRecorder) GetImage(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockImageClient)(nil).GetImage), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockImageClient)(nil).GetImage), ctx, id)
 }
 
 // GetImportInfo mocks base method.
@@ -131,18 +133,32 @@ func (mr *MockImageClientMockRecorder) GetImportInfo(ctx any) *gomock.Call {
 }
 
 // ListImages mocks base method.
-func (m *MockImageClient) ListImages(listOpts images.ListOptsBuilder) ([]images.Image, error) {
+func (m *MockImageClient) ListImages(ctx context.Context, listOpts images.ListOptsBuilder) iter.Seq2[*images.Image, error] {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListImages", listOpts)
-	ret0, _ := ret[0].([]images.Image)
+	ret := m.ctrl.Call(m, "ListImages", ctx, listOpts)
+	ret0, _ := ret[0].(iter.Seq2[*images.Image, error])
+	return ret0
+}
+
+// ListImages indicates an expected call of ListImages.
+func (mr *MockImageClientMockRecorder) ListImages(ctx, listOpts any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImages", reflect.TypeOf((*MockImageClient)(nil).ListImages), ctx, listOpts)
+}
+
+// UpdateImage mocks base method.
+func (m *MockImageClient) UpdateImage(ctx context.Context, id string, updateOpts images.UpdateOptsBuilder) (*images.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateImage", ctx, id, updateOpts)
+	ret0, _ := ret[0].(*images.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListImages indicates an expected call of ListImages.
-func (mr *MockImageClientMockRecorder) ListImages(listOpts any) *gomock.Call {
+// UpdateImage indicates an expected call of UpdateImage.
+func (mr *MockImageClientMockRecorder) UpdateImage(ctx, id, updateOpts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImages", reflect.TypeOf((*MockImageClient)(nil).ListImages), listOpts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageClient)(nil).UpdateImage), ctx, id, updateOpts)
 }
 
 // UploadData mocks base method.

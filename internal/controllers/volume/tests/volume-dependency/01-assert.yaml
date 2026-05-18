@@ -1,0 +1,47 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Volume
+metadata:
+  name: volume-dependency-no-secret
+status:
+  conditions:
+    - type: Available
+      message: OpenStack resource is available
+      status: "True"
+      reason: Success
+    - type: Progressing
+      message: OpenStack resource is up to date
+      status: "False"
+      reason: Success
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Volume
+metadata:
+  name: volume-dependency-no-volumetype
+status:
+  conditions:
+    - type: Available
+      message: OpenStack resource is available
+      status: "True"
+      reason: Success
+    - type: Progressing
+      message: OpenStack resource is up to date
+      status: "False"
+      reason: Success
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Volume
+metadata:
+  name: volume-dependency-no-image
+status:
+  resource:
+    size: 1
+    status: available
+    bootable: true
+  conditions:
+    - type: Available
+      status: "True"
+      reason: Success
+    - type: Progressing
+      status: "False"
+      reason: Success

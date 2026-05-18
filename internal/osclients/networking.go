@@ -19,13 +19,20 @@ package osclients
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/attributestags"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/dns"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/external"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/floatingips"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/mtu"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/portsbinding"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/portsecurity"
+	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/provider"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/groups"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/security/rules"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/trunks"
@@ -36,27 +43,35 @@ import (
 	"github.com/gophercloud/utils/v2/openstack/clientconfig"
 )
 
+type NetworkExt struct {
+	networks.Network
+	dns.NetworkDNSExt
+	external.NetworkExternalExt
+	mtu.NetworkMTUExt
+	portsecurity.PortSecurityExt
+	provider.NetworkProviderExt
+}
+
+type PortExt struct {
+	ports.Port
+	portsecurity.PortSecurityExt
+	portsbinding.PortsBindingExt
+}
+
 type NetworkClient interface {
-	ListFloatingIP(opts floatingips.ListOptsBuilder) ([]floatingips.FloatingIP, error)
-	CreateFloatingIP(opts floatingips.CreateOptsBuilder) (*floatingips.FloatingIP, error)
-	DeleteFloatingIP(id string) error
-	GetFloatingIP(id string) (*floatingips.FloatingIP, error)
-	UpdateFloatingIP(id string, opts floatingips.UpdateOptsBuilder) (*floatingips.FloatingIP, error)
-
-	ListPort(ctx context.Context, opts ports.ListOptsBuilder) ([]ports.Port, error)
-	CreatePort(ctx context.Context, opts ports.CreateOptsBuilder) (*ports.Port, error)
+	ListPort(ctx context.Context, opts ports.ListOptsBuilder) iter.Seq2[*PortExt, error]
+	CreatePort(ctx context.Context, opts ports.CreateOptsBuilder) (*PortExt, error)
 	DeletePort(ctx context.Context, id string) error
-	GetPort(ctx context.Context, id string) (*ports.Port, error)
-	UpdatePort(id string, opts ports.UpdateOptsBuilder) (*ports.Port, error)
+	GetPort(ctx context.Context, id string) (*PortExt, error)
+	UpdatePort(ctx context.Context, id string, opts ports.UpdateOptsBuilder) (*PortExt, error)
 
-	ListTrunk(opts trunks.ListOptsBuilder) ([]trunks.Trunk, error)
-	CreateTrunk(opts trunks.CreateOptsBuilder) (*trunks.Trunk, error)
-	DeleteTrunk(id string) error
+	ListFloatingIP(ctx context.Context, opts floatingips.ListOptsBuilder) iter.Seq2[*floatingips.FloatingIP, error]
+	CreateFloatingIP(ctx context.Context, opts floatingips.CreateOptsBuilder) (*floatingips.FloatingIP, error)
+	DeleteFloatingIP(ctx context.Context, id string) error
+	GetFloatingIP(ctx context.Context, id string) (*floatingips.FloatingIP, error)
+	UpdateFloatingIP(ctx context.Context, id string, opts floatingips.UpdateOptsBuilder) (*floatingips.FloatingIP, error)
 
-	ListTrunkSubports(trunkID string) ([]trunks.Subport, error)
-	RemoveSubports(id string, opts trunks.RemoveSubportsOpts) error
-
-	ListRouter(ctx context.Context, opts routers.ListOpts) ([]routers.Router, error)
+	ListRouter(ctx context.Context, opts routers.ListOpts) iter.Seq2[*routers.Router, error]
 	CreateRouter(ctx context.Context, opts routers.CreateOptsBuilder) (*routers.Router, error)
 	DeleteRouter(ctx context.Context, id string) error
 	GetRouter(ctx context.Context, id string) (*routers.Router, error)
@@ -64,7 +79,7 @@ type NetworkClient interface {
 	AddRouterInterface(ctx context.Context, id string, opts routers.AddInterfaceOptsBuilder) (*routers.InterfaceInfo, error)
 	RemoveRouterInterface(ctx context.Context, id string, opts routers.RemoveInterfaceOptsBuilder) (*routers.InterfaceInfo, error)
 
-	ListSecGroup(ctx context.Context, opts groups.ListOpts) ([]groups.SecGroup, error)
+	ListSecGroup(ctx context.Context, opts groups.ListOpts) iter.Seq2[*groups.SecGroup, error]
 	CreateSecGroup(ctx context.Context, opts groups.CreateOptsBuilder) (*groups.SecGroup, error)
 	DeleteSecGroup(ctx context.Context, id string) error
 	GetSecGroup(ctx context.Context, id string) (*groups.SecGroup, error)
@@ -75,19 +90,25 @@ type NetworkClient interface {
 	DeleteSecGroupRule(ctx context.Context, id string) error
 	GetSecGroupRule(ctx context.Context, id string) (*rules.SecGroupRule, error)
 
-	ListNetwork(opts networks.ListOptsBuilder) pagination.Pager
-	CreateNetwork(ctx context.Context, opts networks.CreateOptsBuilder) networks.CreateResult
-	DeleteNetwork(ctx context.Context, id string) networks.DeleteResult
-	GetNetwork(ctx context.Context, id string) networks.GetResult
-	UpdateNetwork(ctx context.Context, id string, opts networks.UpdateOptsBuilder) networks.UpdateResult
+	ListNetwork(ctx context.Context, opts networks.ListOptsBuilder) iter.Seq2[*NetworkExt, error]
+	CreateNetwork(ctx context.Context, opts networks.CreateOptsBuilder) (*NetworkExt, error)
+	DeleteNetwork(ctx context.Context, id string) error
+	GetNetwork(ctx context.Context, id string) (*NetworkExt, error)
+	UpdateNetwork(ctx context.Context, id string, opts networks.UpdateOptsBuilder) (*NetworkExt, error)
 
-	ListSubnet(ctx context.Context, opts subnets.ListOptsBuilder) ([]subnets.Subnet, error)
+	ListSubnet(ctx context.Context, opts subnets.ListOptsBuilder) iter.Seq2[*subnets.Subnet, error]
 	CreateSubnet(ctx context.Context, opts subnets.CreateOptsBuilder) (*subnets.Subnet, error)
 	DeleteSubnet(ctx context.Context, id string) error
 	GetSubnet(ctx context.Context, id string) (*subnets.Subnet, error)
 	UpdateSubnet(ctx context.Context, id string, opts subnets.UpdateOptsBuilder) (*subnets.Subnet, error)
 
-	ListExtensions() ([]extensions.Extension, error)
+	ListTrunks(ctx context.Context, listOpts trunks.ListOptsBuilder) iter.Seq2[*trunks.Trunk, error]
+	CreateTrunk(ctx context.Context, opts trunks.CreateOptsBuilder) (*trunks.Trunk, error)
+	DeleteTrunk(ctx context.Context, resourceID string) error
+	GetTrunk(ctx context.Context, resourceID string) (*trunks.Trunk, error)
+	UpdateTrunk(ctx context.Context, id string, opts trunks.UpdateOptsBuilder) (*trunks.Trunk, error)
+	AddSubports(ctx context.Context, id string, opts trunks.AddSubportsOptsBuilder) (*trunks.Trunk, error)
+	RemoveSubports(ctx context.Context, id string, opts trunks.RemoveSubportsOpts) error
 
 	ReplaceAllAttributesTags(ctx context.Context, resourceType string, resourceID string, opts attributestags.ReplaceAllOptsBuilder) ([]string, error)
 }
@@ -123,89 +144,82 @@ func (c networkClient) ReplaceAllAttributesTags(ctx context.Context, resourceTyp
 	return attributestags.ReplaceAll(ctx, c.serviceClient, resourceType, resourceID, opts).Extract()
 }
 
-func (c networkClient) ListRouter(ctx context.Context, opts routers.ListOpts) ([]routers.Router, error) {
-	allPages, err := routers.List(c.serviceClient, opts).AllPages(ctx)
-	if err != nil {
-		return nil, err
+func (c networkClient) ListRouter(ctx context.Context, opts routers.ListOpts) iter.Seq2[*routers.Router, error] {
+	pager := routers.List(c.serviceClient, opts)
+	return func(yield func(*routers.Router, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(routers.ExtractRouters, yield))
 	}
-	return routers.ExtractRouters(allPages)
 }
 
-func (c networkClient) ListFloatingIP(opts floatingips.ListOptsBuilder) ([]floatingips.FloatingIP, error) {
-	allPages, err := floatingips.List(c.serviceClient, opts).AllPages(context.TODO())
-	if err != nil {
-		return nil, err
+func (c networkClient) ListFloatingIP(ctx context.Context, opts floatingips.ListOptsBuilder) iter.Seq2[*floatingips.FloatingIP, error] {
+	pager := floatingips.List(c.serviceClient, opts)
+	return func(yield func(*floatingips.FloatingIP, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(floatingips.ExtractFloatingIPs, yield))
 	}
-	return floatingips.ExtractFloatingIPs(allPages)
 }
 
-func (c networkClient) CreateFloatingIP(opts floatingips.CreateOptsBuilder) (*floatingips.FloatingIP, error) {
-	fip, err := floatingips.Create(context.TODO(), c.serviceClient, opts).Extract()
+func (c networkClient) CreateFloatingIP(ctx context.Context, opts floatingips.CreateOptsBuilder) (*floatingips.FloatingIP, error) {
+	fip, err := floatingips.Create(ctx, c.serviceClient, opts).Extract()
 	if err != nil {
 		return nil, err
 	}
 	return fip, nil
 }
 
-func (c networkClient) DeleteFloatingIP(id string) error {
-	return floatingips.Delete(context.TODO(), c.serviceClient, id).ExtractErr()
+func (c networkClient) DeleteFloatingIP(ctx context.Context, id string) error {
+	return floatingips.Delete(ctx, c.serviceClient, id).ExtractErr()
 }
 
-func (c networkClient) GetFloatingIP(id string) (*floatingips.FloatingIP, error) {
-	return floatingips.Get(context.TODO(), c.serviceClient, id).Extract()
+func (c networkClient) GetFloatingIP(ctx context.Context, id string) (*floatingips.FloatingIP, error) {
+	return floatingips.Get(ctx, c.serviceClient, id).Extract()
 }
 
-func (c networkClient) UpdateFloatingIP(id string, opts floatingips.UpdateOptsBuilder) (*floatingips.FloatingIP, error) {
-	return floatingips.Update(context.TODO(), c.serviceClient, id, opts).Extract()
+func (c networkClient) UpdateFloatingIP(ctx context.Context, id string, opts floatingips.UpdateOptsBuilder) (*floatingips.FloatingIP, error) {
+	return floatingips.Update(ctx, c.serviceClient, id, opts).Extract()
 }
 
-func (c networkClient) ListPort(ctx context.Context, opts ports.ListOptsBuilder) ([]ports.Port, error) {
-	allPages, err := ports.List(c.serviceClient, opts).AllPages(ctx)
-	if err != nil {
+func (c networkClient) ListPort(ctx context.Context, opts ports.ListOptsBuilder) iter.Seq2[*PortExt, error] {
+	extractPortExt := func(p pagination.Page) ([]PortExt, error) {
+		var resources []PortExt
+		err := ports.ExtractPortsInto(p, &resources)
+		if err != nil {
+			return nil, err
+		}
+		return resources, nil
+	}
+	pager := ports.List(c.serviceClient, opts)
+	return func(yield func(*PortExt, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(extractPortExt, yield))
+	}
+}
+
+func (c networkClient) CreatePort(ctx context.Context, opts ports.CreateOptsBuilder) (*PortExt, error) {
+	createResult := ports.Create(ctx, c.serviceClient, opts)
+	portExt := PortExt{}
+	if err := createResult.ExtractInto(&portExt); err != nil {
 		return nil, err
 	}
-	return ports.ExtractPorts(allPages)
-}
-
-func (c networkClient) CreatePort(ctx context.Context, opts ports.CreateOptsBuilder) (*ports.Port, error) {
-	return ports.Create(ctx, c.serviceClient, opts).Extract()
+	return &portExt, nil
 }
 
 func (c networkClient) DeletePort(ctx context.Context, id string) error {
 	return ports.Delete(ctx, c.serviceClient, id).ExtractErr()
 }
 
-func (c networkClient) GetPort(ctx context.Context, id string) (*ports.Port, error) {
-	return ports.Get(ctx, c.serviceClient, id).Extract()
-}
-
-func (c networkClient) UpdatePort(id string, opts ports.UpdateOptsBuilder) (*ports.Port, error) {
-	return ports.Update(context.TODO(), c.serviceClient, id, opts).Extract()
-}
-
-func (c networkClient) CreateTrunk(opts trunks.CreateOptsBuilder) (*trunks.Trunk, error) {
-	return trunks.Create(context.TODO(), c.serviceClient, opts).Extract()
-}
-
-func (c networkClient) DeleteTrunk(id string) error {
-	return trunks.Delete(context.TODO(), c.serviceClient, id).ExtractErr()
-}
-
-func (c networkClient) ListTrunkSubports(trunkID string) ([]trunks.Subport, error) {
-	return trunks.GetSubports(context.TODO(), c.serviceClient, trunkID).Extract()
-}
-
-func (c networkClient) RemoveSubports(id string, opts trunks.RemoveSubportsOpts) error {
-	_, err := trunks.RemoveSubports(context.TODO(), c.serviceClient, id, opts).Extract()
-	return err
-}
-
-func (c networkClient) ListTrunk(opts trunks.ListOptsBuilder) ([]trunks.Trunk, error) {
-	allPages, err := trunks.List(c.serviceClient, opts).AllPages(context.TODO())
-	if err != nil {
+func (c networkClient) GetPort(ctx context.Context, id string) (*PortExt, error) {
+	portExt := PortExt{}
+	if err := ports.Get(ctx, c.serviceClient, id).ExtractInto(&portExt); err != nil {
 		return nil, err
 	}
-	return trunks.ExtractTrunks(allPages)
+	return &portExt, nil
+}
+
+func (c networkClient) UpdatePort(ctx context.Context, id string, opts ports.UpdateOptsBuilder) (*PortExt, error) {
+	portExt := PortExt{}
+	if err := ports.Update(ctx, c.serviceClient, id, opts).ExtractInto(&portExt); err != nil {
+		return nil, err
+	}
+	return &portExt, nil
 }
 
 func (c networkClient) CreateRouter(ctx context.Context, opts routers.CreateOptsBuilder) (*routers.Router, error) {
@@ -221,15 +235,14 @@ func (c networkClient) GetRouter(ctx context.Context, id string) (*routers.Route
 }
 
 func (c networkClient) UpdateRouter(ctx context.Context, id string, opts routers.UpdateOptsBuilder) (*routers.Router, error) {
-	return routers.Update(context.TODO(), c.serviceClient, id, opts).Extract()
+	return routers.Update(ctx, c.serviceClient, id, opts).Extract()
 }
 
-func (c networkClient) ListSecGroup(ctx context.Context, opts groups.ListOpts) ([]groups.SecGroup, error) {
-	allPages, err := groups.List(c.serviceClient, opts).AllPages(ctx)
-	if err != nil {
-		return nil, err
+func (c networkClient) ListSecGroup(ctx context.Context, opts groups.ListOpts) iter.Seq2[*groups.SecGroup, error] {
+	pager := groups.List(c.serviceClient, opts)
+	return func(yield func(*groups.SecGroup, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(groups.ExtractGroups, yield))
 	}
-	return groups.ExtractGroups(allPages)
 }
 
 func (c networkClient) CreateSecGroup(ctx context.Context, opts groups.CreateOptsBuilder) (*groups.SecGroup, error) {
@@ -268,32 +281,55 @@ func (c networkClient) GetSecGroupRule(ctx context.Context, id string) (*rules.S
 	return rules.Get(ctx, c.serviceClient, id).Extract()
 }
 
-func (c networkClient) ListNetwork(opts networks.ListOptsBuilder) pagination.Pager {
-	return networks.List(c.serviceClient, opts)
+func (c networkClient) ListNetwork(ctx context.Context, opts networks.ListOptsBuilder) iter.Seq2[*NetworkExt, error] {
+	extractNetworkExt := func(p pagination.Page) ([]NetworkExt, error) {
+		var resources []NetworkExt
+		err := networks.ExtractNetworksInto(p, &resources)
+		if err != nil {
+			return nil, err
+		}
+		return resources, nil
+	}
+	pager := networks.List(c.serviceClient, opts)
+	return func(yield func(*NetworkExt, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(extractNetworkExt, yield))
+	}
 }
 
-func (c networkClient) CreateNetwork(ctx context.Context, opts networks.CreateOptsBuilder) networks.CreateResult {
-	return networks.Create(ctx, c.serviceClient, opts)
-}
-
-func (c networkClient) DeleteNetwork(ctx context.Context, id string) networks.DeleteResult {
-	return networks.Delete(ctx, c.serviceClient, id)
-}
-
-func (c networkClient) GetNetwork(ctx context.Context, id string) networks.GetResult {
-	return networks.Get(ctx, c.serviceClient, id)
-}
-
-func (c networkClient) UpdateNetwork(ctx context.Context, id string, opts networks.UpdateOptsBuilder) networks.UpdateResult {
-	return networks.Update(ctx, c.serviceClient, id, opts)
-}
-
-func (c networkClient) ListSubnet(ctx context.Context, opts subnets.ListOptsBuilder) ([]subnets.Subnet, error) {
-	allPages, err := subnets.List(c.serviceClient, opts).AllPages(context.TODO())
-	if err != nil {
+func (c networkClient) CreateNetwork(ctx context.Context, opts networks.CreateOptsBuilder) (*NetworkExt, error) {
+	createResult := networks.Create(ctx, c.serviceClient, opts)
+	networkExt := NetworkExt{}
+	if err := createResult.ExtractInto(&networkExt); err != nil {
 		return nil, err
 	}
-	return subnets.ExtractSubnets(allPages)
+	return &networkExt, nil
+}
+
+func (c networkClient) DeleteNetwork(ctx context.Context, id string) error {
+	return networks.Delete(ctx, c.serviceClient, id).ExtractErr()
+}
+
+func (c networkClient) GetNetwork(ctx context.Context, id string) (*NetworkExt, error) {
+	networkExt := NetworkExt{}
+	if err := networks.Get(ctx, c.serviceClient, id).ExtractInto(&networkExt); err != nil {
+		return nil, err
+	}
+	return &networkExt, nil
+}
+
+func (c networkClient) UpdateNetwork(ctx context.Context, id string, opts networks.UpdateOptsBuilder) (*NetworkExt, error) {
+	networkExt := NetworkExt{}
+	if err := networks.Update(ctx, c.serviceClient, id, opts).ExtractInto(&networkExt); err != nil {
+		return nil, err
+	}
+	return &networkExt, nil
+}
+
+func (c networkClient) ListSubnet(ctx context.Context, opts subnets.ListOptsBuilder) iter.Seq2[*subnets.Subnet, error] {
+	pager := subnets.List(c.serviceClient, opts)
+	return func(yield func(*subnets.Subnet, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(subnets.ExtractSubnets, yield))
+	}
 }
 
 func (c networkClient) CreateSubnet(ctx context.Context, opts subnets.CreateOptsBuilder) (*subnets.Subnet, error) {
@@ -312,10 +348,42 @@ func (c networkClient) UpdateSubnet(ctx context.Context, id string, opts subnets
 	return subnets.Update(ctx, c.serviceClient, id, opts).Extract()
 }
 
-func (c networkClient) ListExtensions() ([]extensions.Extension, error) {
-	allPages, err := extensions.List(c.serviceClient).AllPages(context.TODO())
+func (c networkClient) ListExtensions(ctx context.Context) ([]extensions.Extension, error) {
+	allPages, err := extensions.List(c.serviceClient).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return extensions.ExtractExtensions(allPages)
+}
+
+func (c networkClient) ListTrunks(ctx context.Context, listOpts trunks.ListOptsBuilder) iter.Seq2[*trunks.Trunk, error] {
+	pager := trunks.List(c.serviceClient, listOpts)
+	return func(yield func(*trunks.Trunk, error) bool) {
+		_ = pager.EachPage(ctx, yieldPage(trunks.ExtractTrunks, yield))
+	}
+}
+
+func (c networkClient) CreateTrunk(ctx context.Context, opts trunks.CreateOptsBuilder) (*trunks.Trunk, error) {
+	return trunks.Create(ctx, c.serviceClient, opts).Extract()
+}
+
+func (c networkClient) DeleteTrunk(ctx context.Context, resourceID string) error {
+	return trunks.Delete(ctx, c.serviceClient, resourceID).ExtractErr()
+}
+
+func (c networkClient) GetTrunk(ctx context.Context, resourceID string) (*trunks.Trunk, error) {
+	return trunks.Get(ctx, c.serviceClient, resourceID).Extract()
+}
+
+func (c networkClient) UpdateTrunk(ctx context.Context, id string, opts trunks.UpdateOptsBuilder) (*trunks.Trunk, error) {
+	return trunks.Update(ctx, c.serviceClient, id, opts).Extract()
+}
+
+func (c networkClient) AddSubports(ctx context.Context, id string, opts trunks.AddSubportsOptsBuilder) (*trunks.Trunk, error) {
+	return trunks.AddSubports(ctx, c.serviceClient, id, opts).Extract()
+}
+
+func (c networkClient) RemoveSubports(ctx context.Context, id string, opts trunks.RemoveSubportsOpts) error {
+	_, err := trunks.RemoveSubports(ctx, c.serviceClient, id, opts).Extract()
+	return err
 }

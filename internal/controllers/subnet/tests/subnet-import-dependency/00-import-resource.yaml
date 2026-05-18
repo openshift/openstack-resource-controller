@@ -1,0 +1,42 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Project
+metadata:
+  name: subnet-import-dependency
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: unmanaged
+  import:
+    filter:
+      name: subnet-import-dependency-external
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Network
+metadata:
+  name: subnet-import-dependency
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: unmanaged
+  import:
+    filter:
+      name: subnet-import-dependency-external
+      projectRef: subnet-import-dependency
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Subnet
+metadata:
+  name: subnet-import-dependency
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: unmanaged
+  import:
+    filter:
+      ipVersion: 4
+      networkRef: subnet-import-dependency
+      projectRef: subnet-import-dependency

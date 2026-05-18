@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	openstackv1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
+	openstackv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ limitations under the License.
 package clientset
 
 import (
-	"fmt"
-	"net/http"
+	fmt "fmt"
+	http "net/http"
 
-	openstackv1alpha1 "github.com/k-orc/openstack-resource-controller/pkg/clients/clientset/clientset/typed/api/v1alpha1"
+	openstackv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset/typed/api/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

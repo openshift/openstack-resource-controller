@@ -1,0 +1,51 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Port
+metadata:
+  name: server-update-second
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    networkRef: server-update
+    addresses:
+      - subnetRef: server-update
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Volume
+metadata:
+  name: server-update
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    size: 1
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Server
+metadata:
+  name: server-update
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    name: server-update-updated
+    ports:
+      - portRef: server-update
+      - portRef: server-update-second
+    volumes:
+      - volumeRef: server-update
+    tags:
+      - tag1
+      - tag2
+    metadata:
+      - key: environment
+        value: staging
+      - key: team
+        value: platform

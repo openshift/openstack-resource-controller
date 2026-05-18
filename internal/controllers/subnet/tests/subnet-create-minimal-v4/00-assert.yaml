@@ -1,0 +1,33 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+resourceRefs:
+    - apiVersion: openstack.k-orc.cloud/v1alpha1
+      kind: Subnet
+      name: subnet-create-minimal-v4
+      ref: subnet
+    - apiVersion: openstack.k-orc.cloud/v1alpha1
+      kind: Network
+      name: subnet-create-minimal-v4
+      ref: network
+assertAll:
+    - celExpr: "subnet.status.resource.networkID == network.status.id"
+    - celExpr: "'description' in subnet.status.resource == false"
+    - celExpr: "'ipv6AddressMode' in subnet.status.resource == false"
+    - celExpr: "'ipv6RAMode' in subnet.status.resource == false"
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Subnet
+metadata:
+  name: subnet-create-minimal-v4
+status:
+  resource:
+    name: subnet-create-minimal-v4
+    allocationPools:
+      - start: 192.168.0.2
+        end: 192.168.0.254
+    cidr: 192.168.0.0/24
+    dnsPublishFixedIP: false
+    enableDHCP: true
+    gatewayIP: 192.168.0.1
+    ipVersion: 4

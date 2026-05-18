@@ -18,33 +18,24 @@ package image
 
 import (
 	"context"
+	"errors"
 	"time"
 
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
+	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
 
-	ctrlexport "github.com/k-orc/openstack-resource-controller/internal/controllers/export"
-	"github.com/k-orc/openstack-resource-controller/internal/scope"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/controllers/generic/interfaces"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/controllers/generic/reconciler"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/scope"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/util/credentials"
 )
 
-const (
-	Finalizer = "openstack.k-orc.cloud/image"
+const controllerName = "image"
 
-	FieldOwner = "openstack.k-orc.cloud/imagecontroller"
-	// Field owner of the object finalizer.
-	SSAFinalizerTxn = "finalizer"
-	// Field owner of transient status.
-	SSAStatusTxn = "status"
-)
-
-// ssaFieldOwner returns the field owner for a specific named SSA transaction.
-func ssaFieldOwner(txn string) client.FieldOwner {
-	return client.FieldOwner(FieldOwner + "/" + txn)
-}
+// +kubebuilder:rbac:groups=openstack.k-orc.cloud,resources=images,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=openstack.k-orc.cloud,resources=images/status,verbs=get;update;patch
 
 const (
 	// The time to wait before reconciling again when we are expecting OpenStack to finish some task and update status.
@@ -61,31 +52,29 @@ type imageReconcilerConstructor struct {
 	scopeFactory scope.Factory
 }
 
-func New(scopeFactory scope.Factory) ctrlexport.Controller {
+func New(scopeFactory scope.Factory) interfaces.Controller {
 	return imageReconcilerConstructor{scopeFactory: scopeFactory}
 }
 
 func (imageReconcilerConstructor) GetName() string {
-	return "image"
-}
-
-// orcImageReconciler reconciles an ORC Image.
-type orcImageReconciler struct {
-	client       client.Client
-	recorder     record.EventRecorder
-	scopeFactory scope.Factory
+	return controllerName
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (c imageReconcilerConstructor) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
-	reconciler := orcImageReconciler{
-		client:       mgr.GetClient(),
-		recorder:     mgr.GetEventRecorderFor("orc-image-controller"),
-		scopeFactory: c.scopeFactory,
+func (c imageReconcilerConstructor) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	builder := ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
+		For(&orcv1alpha1.Image{})
+
+	if err := errors.Join(
+		credentialsDependency.AddToManager(ctx, mgr),
+		credentials.AddCredentialsWatch(log, mgr.GetClient(), builder, credentialsDependency),
+	); err != nil {
+		return err
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&orcv1alpha1.Image{}).
-		WithOptions(options).
-		Complete(&reconciler)
+	r := reconciler.NewController(controllerName, mgr.GetClient(), c.scopeFactory, imageHelperFactory{}, imageStatusWriter{})
+	return builder.Complete(&r)
 }

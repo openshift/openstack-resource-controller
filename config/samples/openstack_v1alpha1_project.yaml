@@ -1,0 +1,15 @@
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Project
+metadata:
+  name: project-sample
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    description: Sample Project
+    enabled: true
+    tags:
+      - tag1
+      - tag2

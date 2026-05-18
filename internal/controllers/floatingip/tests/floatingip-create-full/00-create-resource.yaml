@@ -1,0 +1,110 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Project
+metadata:
+  name: floatingip-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource: {}
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Network
+metadata:
+  name: floatingip-create-full-external
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    external: true
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Subnet
+metadata:
+  name: floatingip-create-full-external
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    networkRef: floatingip-create-full-external
+    ipVersion: 4
+    cidr: 192.168.155.0/24
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Router
+metadata:
+  name: floatingip-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    externalGateways:
+      - networkRef: floatingip-create-full-external
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Network
+metadata:
+  name: floatingip-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource: {}
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Subnet
+metadata:
+  name: floatingip-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    networkRef: floatingip-create-full
+    routerRef: floatingip-create-full
+    ipVersion: 4
+    cidr: 10.0.0.0/24
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Port
+metadata:
+  name: floatingip-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    networkRef: floatingip-create-full
+    addresses:
+      - subnetRef: floatingip-create-full
+        ip: 10.0.0.10
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: FloatingIP
+metadata:
+  name: floatingip-create-full
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack-admin
+    secretName: openstack-clouds
+  managementPolicy: managed
+  resource:
+    floatingNetworkRef: floatingip-create-full-external
+    portRef: floatingip-create-full
+    description: Floating IP from "create full" test
+    fixedIP: 10.0.0.10
+    floatingIP: 192.168.155.5
+    tags:
+      - tag1
+    projectRef: floatingip-create-full

@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,21 +19,23 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
+	apiv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
 )
 
 // ImagePropertiesHardwareApplyConfiguration represents a declarative configuration of the ImagePropertiesHardware type for use
 // with apply.
 type ImagePropertiesHardwareApplyConfiguration struct {
-	CPUSockets      *int                 `json:"cpuSockets,omitempty"`
-	CPUCores        *int                 `json:"cpuCores,omitempty"`
-	CPUThreads      *int                 `json:"cpuThreads,omitempty"`
-	CPUPolicy       *string              `json:"cpuPolicy,omitempty"`
-	CPUThreadPolicy *string              `json:"cpuThreadPolicy,omitempty"`
-	CDROMBus        *v1alpha1.ImageHWBus `json:"cdromBus,omitempty"`
-	DiskBus         *v1alpha1.ImageHWBus `json:"diskBus,omitempty"`
-	SCSIModel       *string              `json:"scsiModel,omitempty"`
-	VIFModel        *string              `json:"vifModel,omitempty"`
+	CPUSockets      *int32                  `json:"cpuSockets,omitempty"`
+	CPUCores        *int32                  `json:"cpuCores,omitempty"`
+	CPUThreads      *int32                  `json:"cpuThreads,omitempty"`
+	CPUPolicy       *string                 `json:"cpuPolicy,omitempty"`
+	CPUThreadPolicy *string                 `json:"cpuThreadPolicy,omitempty"`
+	CDROMBus        *apiv1alpha1.ImageHWBus `json:"cdromBus,omitempty"`
+	DiskBus         *apiv1alpha1.ImageHWBus `json:"diskBus,omitempty"`
+	SCSIModel       *string                 `json:"scsiModel,omitempty"`
+	VIFModel        *string                 `json:"vifModel,omitempty"`
+	RngModel        *string                 `json:"rngModel,omitempty"`
+	QemuGuestAgent  *bool                   `json:"qemuGuestAgent,omitempty"`
 }
 
 // ImagePropertiesHardwareApplyConfiguration constructs a declarative configuration of the ImagePropertiesHardware type for use with
@@ -45,7 +47,7 @@ func ImagePropertiesHardware() *ImagePropertiesHardwareApplyConfiguration {
 // WithCPUSockets sets the CPUSockets field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CPUSockets field is set to the value of the last call.
-func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUSockets(value int) *ImagePropertiesHardwareApplyConfiguration {
+func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUSockets(value int32) *ImagePropertiesHardwareApplyConfiguration {
 	b.CPUSockets = &value
 	return b
 }
@@ -53,7 +55,7 @@ func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUSockets(value int) *I
 // WithCPUCores sets the CPUCores field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CPUCores field is set to the value of the last call.
-func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUCores(value int) *ImagePropertiesHardwareApplyConfiguration {
+func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUCores(value int32) *ImagePropertiesHardwareApplyConfiguration {
 	b.CPUCores = &value
 	return b
 }
@@ -61,7 +63,7 @@ func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUCores(value int) *Ima
 // WithCPUThreads sets the CPUThreads field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CPUThreads field is set to the value of the last call.
-func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUThreads(value int) *ImagePropertiesHardwareApplyConfiguration {
+func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUThreads(value int32) *ImagePropertiesHardwareApplyConfiguration {
 	b.CPUThreads = &value
 	return b
 }
@@ -85,7 +87,7 @@ func (b *ImagePropertiesHardwareApplyConfiguration) WithCPUThreadPolicy(value st
 // WithCDROMBus sets the CDROMBus field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CDROMBus field is set to the value of the last call.
-func (b *ImagePropertiesHardwareApplyConfiguration) WithCDROMBus(value v1alpha1.ImageHWBus) *ImagePropertiesHardwareApplyConfiguration {
+func (b *ImagePropertiesHardwareApplyConfiguration) WithCDROMBus(value apiv1alpha1.ImageHWBus) *ImagePropertiesHardwareApplyConfiguration {
 	b.CDROMBus = &value
 	return b
 }
@@ -93,7 +95,7 @@ func (b *ImagePropertiesHardwareApplyConfiguration) WithCDROMBus(value v1alpha1.
 // WithDiskBus sets the DiskBus field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DiskBus field is set to the value of the last call.
-func (b *ImagePropertiesHardwareApplyConfiguration) WithDiskBus(value v1alpha1.ImageHWBus) *ImagePropertiesHardwareApplyConfiguration {
+func (b *ImagePropertiesHardwareApplyConfiguration) WithDiskBus(value apiv1alpha1.ImageHWBus) *ImagePropertiesHardwareApplyConfiguration {
 	b.DiskBus = &value
 	return b
 }
@@ -111,5 +113,21 @@ func (b *ImagePropertiesHardwareApplyConfiguration) WithSCSIModel(value string) 
 // If called multiple times, the VIFModel field is set to the value of the last call.
 func (b *ImagePropertiesHardwareApplyConfiguration) WithVIFModel(value string) *ImagePropertiesHardwareApplyConfiguration {
 	b.VIFModel = &value
+	return b
+}
+
+// WithRngModel sets the RngModel field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RngModel field is set to the value of the last call.
+func (b *ImagePropertiesHardwareApplyConfiguration) WithRngModel(value string) *ImagePropertiesHardwareApplyConfiguration {
+	b.RngModel = &value
+	return b
+}
+
+// WithQemuGuestAgent sets the QemuGuestAgent field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the QemuGuestAgent field is set to the value of the last call.
+func (b *ImagePropertiesHardwareApplyConfiguration) WithQemuGuestAgent(value bool) *ImagePropertiesHardwareApplyConfiguration {
+	b.QemuGuestAgent = &value
 	return b
 }

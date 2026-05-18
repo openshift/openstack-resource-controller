@@ -1,0 +1,18 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Port
+metadata:
+  name: port-import
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: openstack-clouds
+  managementPolicy: unmanaged
+  import:
+    filter:
+      name: port-import-external
+      description: Port from "port-import" test
+      adminStateUp: false
+      macAddress: fa:16:3e:23:fd:d7
+      tags:
+        - tag1

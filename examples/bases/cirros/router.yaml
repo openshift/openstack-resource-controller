@@ -1,0 +1,14 @@
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Router
+metadata:
+  name: router
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: cloud-config
+  managementPolicy: managed
+  resource:
+    tags:
+      - orc-test
+    externalGateways:
+      - networkRef: external-network

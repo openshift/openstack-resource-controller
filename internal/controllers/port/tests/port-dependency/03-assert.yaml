@@ -1,0 +1,14 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# Dependencies that were prevented deletion before should now be gone
+- script: "! kubectl get subnet port-dependency --namespace $NAMESPACE"
+  skipLogOutput: true
+- script: "! kubectl get network port-dependency --namespace $NAMESPACE"
+  skipLogOutput: true
+- script: "! kubectl get securitygroup port-dependency --namespace $NAMESPACE"
+  skipLogOutput: true
+- script: "! kubectl get project port-dependency --namespace $NAMESPACE"
+  skipLogOutput: true
+- script: "! kubectl get secret port-dependency --namespace $NAMESPACE"
+  skipLogOutput: true

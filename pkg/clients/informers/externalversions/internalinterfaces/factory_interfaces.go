@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ package internalinterfaces
 import (
 	time "time"
 
-	clientset "github.com/k-orc/openstack-resource-controller/pkg/clients/clientset/clientset"
+	clientset "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"

@@ -1,9 +1,10 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
+BUNDLE_IMG ?= bundle:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.29.0
 TRIVY_VERSION = 0.69.3
-GO_VERSION ?= 1.25.9
+GO_VERSION ?= 1.25.10
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -57,7 +58,7 @@ modules:
 	go mod tidy
 
 .PHONY: generate
-generate: generate-resources generate-controller-gen generate-codegen generate-go modules manifests
+generate: generate-resources generate-controller-gen generate-codegen generate-go generate-docs modules manifests
 
 .PHONY: generate-resources
 generate-resources:
@@ -75,9 +76,18 @@ generate-codegen: generate-controller-gen ## codegen requires DeepCopy etc
 generate-go: mockgen
 	go generate ./...
 
+.PHONY: generate-bundle
+generate-bundle: kustomize operator-sdk
+	./hack/bundle.sh
+
+.PHONY: generate-docs
+generate-docs:
+	$(MAKE) -C website generated
+
 .PHONY: verify-generated
 verify-generated: generate
-	@if !(git diff --quiet HEAD); then \
+	@if test -n "`git status --porcelain`"; then \
+		git status; \
 		git diff; \
 		echo "generated files are out of date, run make generate"; exit 1; \
 	fi
@@ -85,6 +95,16 @@ verify-generated: generate
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
+
+.PHONY: verify-fmt
+verify-fmt: SRC := $(shell find . -path './.git' -prune -o -type f -name '*.go' -print)
+verify-fmt: ## Errors if the code is not go-fmt'd.
+	@UNFORMATTED="$$(gofmt -s -l $(SRC))"; \
+	if [ -n "$$UNFORMATTED" ]; then \
+		echo "Run go fmt ./... to fix these files:"; \
+		echo "$$UNFORMATTED"; \
+		exit 1; \
+	fi
 
 .PHONY: vet
 vet: ## Run go vet against code.
@@ -96,35 +116,64 @@ test: envtest
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list $(TEST_PATHS) | grep -v /e2e) -coverprofile cover.out
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
+# The kuttl tests executed by test-e2e support the following environment
+# variables:
+# - E2E_OSCLOUDS: if set, the path to a clouds.yaml to use for the test run. If
+#   not set, defaults to /etc/openstack/clouds.yaml.
+# - E2E_KUTTL_DIR: if set, the path to a directory containing kuttl tests, e.g.
+#   ./internal/controllers/flavor/tests. Only tests from this directory will
+#   run. If not set, all discovered kuttl tests will run.
+# - E2E_KUTTL_TEST: if set, only run the specific named test, e.g.
+#   'create-full-v4'. If not set, all tests will run.
 .PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
-test-e2e:
+test-e2e: kuttl
 	# go test ./test/e2e/ -v -ginkgo.v
 	./hack/e2e.sh
 
+.PHONY: test-examples
+test-examples:
+	./hack/run_examples.sh
+
 .PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter
-	$(GOLANGCI_LINT) run
+lint: golangci-kal ## Run golangci-kal linter
+	$(GOLANGCI_KAL) run
 
 .PHONY: lint-fix
-lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
-	$(GOLANGCI_LINT) run --fix
+lint-fix: golangci-kal ## Run golangci-kal linter and perform fixes
+	$(GOLANGCI_KAL) run --fix
 
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet ## Build manager binary.
-	go build -o bin/manager cmd/manager/main.go
+build: manifests generate fmt vet build-manager
+
+.PHONY: build-manager
+# Set build time variables including version details
+build-manager: LDFLAGS ?= $(shell source ./hack/version.sh; version::get_git_vars; version::get_build_date; version::ldflags)
+build-manager:
+	go build -ldflags "${LDFLAGS}" -o bin/manager cmd/manager/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./cmd/manager/main.go
+
+DOCKER_BUILD_ARGS ?=
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build --tag ${IMG} --build-arg "GO_VERSION=$(GO_VERSION)" .
+	source hack/version.sh && version::get_git_vars && version::get_build_date && \
+	$(CONTAINER_TOOL) build \
+		--tag ${IMG} \
+		--build-arg "GO_VERSION=$(GO_VERSION)" \
+		--build-arg "BUILD_DATE=$${BUILD_DATE}" \
+		--build-arg "GIT_COMMIT=$${GIT_COMMIT}" \
+		--build-arg "GIT_RELEASE_COMMIT=$${GIT_RELEASE_COMMIT}" \
+		--build-arg "GIT_TREE_STATE=$${GIT_TREE_STATE}" \
+		--build-arg "GIT_VERSION=$${GIT_VERSION}" \
+		${DOCKER_BUILD_ARGS} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -141,10 +190,20 @@ PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
 docker-buildx: ## Build and push docker image for the manager for cross-platform support
 	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
 	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
-	- $(CONTAINER_TOOL) buildx create --name orc-builder
-	$(CONTAINER_TOOL) buildx use orc-builder
-	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG} --build-arg "GO_VERSION=$(GO_VERSION)" -f Dockerfile.cross .
-	- $(CONTAINER_TOOL) buildx rm orc-builder
+	# Note that get_git_vars and get_build_date both honour environment
+	# variable which are already set
+	- source hack/version.sh && version::get_git_vars && version::get_build_date && \
+	  $(CONTAINER_TOOL) buildx build \
+		--platform=$(PLATFORMS) \
+		--tag ${IMG} --push \
+		--build-arg "GO_VERSION=$(GO_VERSION)" \
+		--build-arg "BUILD_DATE=$${BUILD_DATE}" \
+		--build-arg "GIT_COMMIT=$${GIT_COMMIT}" \
+		--build-arg "GIT_RELEASE_COMMIT=$${GIT_RELEASE_COMMIT}" \
+		--build-arg "GIT_TREE_STATE=$${GIT_TREE_STATE}" \
+		--build-arg "GIT_VERSION=$${GIT_VERSION}" \
+		-f Dockerfile.cross \
+		$(DOCKER_BUILD_ARGS) .
 	rm Dockerfile.cross
 
 .PHONY: build-installer
@@ -152,6 +211,10 @@ build-installer: manifests generate kustomize ## Generate a consolidated YAML wi
 	mkdir -p dist
 	$(MAKE) custom-deploy IMG=${IMG}
 	$(KUSTOMIZE) build $(CUSTOMDEPLOY) > dist/install.yaml
+
+.PHONY: build-bundle-image
+build-bundle-image: generate-bundle
+	$(CONTAINER_TOOL) build -f bundle.Dockerfile -t ${BUNDLE_IMG} .
 
 ##@ Deployment
 
@@ -241,16 +304,21 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
+GOLANGCI_KAL = $(LOCALBIN)/golangci-kube-api-linter
 MOCKGEN = $(LOCALBIN)/mockgen
+KUTTL = $(LOCALBIN)/kubectl-kuttl
 GOVULNCHECK = $(LOCALBIN)/govulncheck
+OPERATOR_SDK = $(LOCALBIN)/operator-sdk
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.4.2
-CONTROLLER_TOOLS_VERSION ?= v0.16.4
-ENVTEST_VERSION ?= release-0.22
-GOLANGCI_LINT_VERSION ?= v1.64.8
-MOCKGEN_VERSION ?= v0.4.0
+KUSTOMIZE_VERSION ?= v5.8.1
+CONTROLLER_TOOLS_VERSION ?= v0.20.1
+ENVTEST_VERSION ?= release-0.23
+GOLANGCI_LINT_VERSION ?= v2.11.4
+MOCKGEN_VERSION ?= v0.6.0
+KUTTL_VERSION ?= v0.26.0
 GOVULNCHECK_VERSION ?= v1.1.4
+OPERATOR_SDK_VERSION ?= v1.42.2
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
@@ -270,17 +338,46 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+
+define custom-gcl
+version:  $(GOLANGCI_LINT_VERSION)
+name: golangci-kube-api-linter
+destination: $(LOCALBIN)
+plugins:
+- module: 'github.com/k-orc/openstack-resource-controller/v2/tools/orc-api-linter'
+  path: ./tools/orc-api-linter
+endef
+export custom-gcl
+
+CUSTOM_GCL_FILE ?= $(shell pwd)/.custom-gcl.yml
+
+.PHONY: golangci-kal
+golangci-kal: $(GOLANGCI_KAL)
+$(GOLANGCI_KAL): $(LOCALBIN) $(GOLANGCI_LINT)
+	$(file >$(CUSTOM_GCL_FILE),$(custom-gcl))
+	cd tools/orc-api-linter && go mod tidy
+	$(GOLANGCI_LINT) custom
 
 .PHONY: mockgen
 mockgen: $(MOCKGEN) ## Download mockgen locally if necessary.
 $(MOCKGEN): $(LOCALBIN)
 	$(call go-install-tool,$(MOCKGEN),go.uber.org/mock/mockgen,$(MOCKGEN_VERSION))
 
+.PHONY: kuttl
+kuttl: $(KUTTL) ## Download kuttl locally if necessary.
+$(KUTTL): $(LOCALBIN)
+	$(call go-install-tool,$(KUTTL),github.com/kudobuilder/kuttl/cmd/kubectl-kuttl,$(KUTTL_VERSION))
+
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK) ## Download govulncheck locally if necessary.
 $(GOVULNCHECK): $(LOCALBIN)
 	$(call go-install-tool,$(GOVULNCHECK),golang.org/x/vuln/cmd/govulncheck,$(GOVULNCHECK_VERSION))
+
+.PHONY: operator-sdk
+operator-sdk: $(OPERATOR_SDK) ## Download operator-sdk locally if necessary.
+$(OPERATOR_SDK): $(LOCALBIN)
+	$(call go-install-tool,$(OPERATOR_SDK),github.com/operator-framework/operator-sdk/cmd/operator-sdk,$(OPERATOR_SDK_VERSION))
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary

@@ -2,10 +2,17 @@ package routers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/pagination"
 )
+
+// ListOptsBuilder allows extensions to add additional parameters to the List
+// request.
+type ListOptsBuilder interface {
+	ToRouterListQuery() (string, error)
+}
 
 // ListOpts allows the filtering and sorting of paginated collections through
 // the API. Filtering is achieved by passing in struct field values that map to
@@ -13,22 +20,32 @@ import (
 // sort by a particular network attribute. SortDir sets the direction, and is
 // either `asc' or `desc'. Marker and Limit are used for pagination.
 type ListOpts struct {
-	ID           string `q:"id"`
-	Name         string `q:"name"`
-	Description  string `q:"description"`
-	AdminStateUp *bool  `q:"admin_state_up"`
-	Distributed  *bool  `q:"distributed"`
-	Status       string `q:"status"`
-	TenantID     string `q:"tenant_id"`
-	ProjectID    string `q:"project_id"`
-	Limit        int    `q:"limit"`
-	Marker       string `q:"marker"`
-	SortKey      string `q:"sort_key"`
-	SortDir      string `q:"sort_dir"`
-	Tags         string `q:"tags"`
-	TagsAny      string `q:"tags-any"`
-	NotTags      string `q:"not-tags"`
-	NotTagsAny   string `q:"not-tags-any"`
+	ID             string `q:"id"`
+	Name           string `q:"name"`
+	Description    string `q:"description"`
+	AdminStateUp   *bool  `q:"admin_state_up"`
+	Distributed    *bool  `q:"distributed"`
+	Status         string `q:"status"`
+	TenantID       string `q:"tenant_id"`
+	ProjectID      string `q:"project_id"`
+	Limit          int    `q:"limit"`
+	Marker         string `q:"marker"`
+	SortKey        string `q:"sort_key"`
+	SortDir        string `q:"sort_dir"`
+	Tags           string `q:"tags"`
+	TagsAny        string `q:"tags-any"`
+	NotTags        string `q:"not-tags"`
+	NotTagsAny     string `q:"not-tags-any"`
+	RevisionNumber *int   `q:"revision_number"`
+}
+
+// ToRouterListQuery formats a ListOpts into a query string.
+func (opts ListOpts) ToRouterListQuery() (string, error) {
+	q, err := gophercloud.BuildQueryString(&opts)
+	if err != nil {
+		return "", err
+	}
+	return q.String(), nil
 }
 
 // List returns a Pager which allows you to iterate over a collection of
@@ -37,13 +54,16 @@ type ListOpts struct {
 //
 // Default policy settings return only those routers that are owned by the
 // tenant who submits the request, unless an admin user submits the request.
-func List(c *gophercloud.ServiceClient, opts ListOpts) pagination.Pager {
-	q, err := gophercloud.BuildQueryString(&opts)
-	if err != nil {
-		return pagination.Pager{Err: err}
+func List(c *gophercloud.ServiceClient, opts ListOptsBuilder) pagination.Pager {
+	url := rootURL(c)
+	if opts != nil {
+		query, err := opts.ToRouterListQuery()
+		if err != nil {
+			return pagination.Pager{Err: err}
+		}
+		url += query
 	}
-	u := rootURL(c) + q.String()
-	return pagination.NewPager(c, u, func(r pagination.PageResult) pagination.Page {
+	return pagination.NewPager(c, url, func(r pagination.PageResult) pagination.Page {
 		return RouterPage{pagination.LinkedPageBase{PageResult: r}}
 	})
 }
@@ -112,6 +132,11 @@ type UpdateOpts struct {
 	Distributed  *bool        `json:"distributed,omitempty"`
 	GatewayInfo  *GatewayInfo `json:"external_gateway_info,omitempty"`
 	Routes       *[]Route     `json:"routes,omitempty"`
+
+	// RevisionNumber implements extension:standard-attr-revisions. If != "" it
+	// will set revision_number=%s. If the revision number does not match, the
+	// update will fail.
+	RevisionNumber *int `json:"-" h:"If-Match"`
 }
 
 // ToRouterUpdateMap builds an update body based on UpdateOpts.
@@ -130,8 +155,19 @@ func Update(ctx context.Context, c *gophercloud.ServiceClient, id string, opts U
 		r.Err = err
 		return
 	}
+	h, err := gophercloud.BuildHeaders(opts)
+	if err != nil {
+		r.Err = err
+		return
+	}
+	for k := range h {
+		if k == "If-Match" {
+			h[k] = fmt.Sprintf("revision_number=%s", h[k])
+		}
+	}
 	resp, err := c.Put(ctx, resourceURL(c, id), b, &r.Body, &gophercloud.RequestOpts{
-		OkCodes: []int{200},
+		MoreHeaders: h,
+		OkCodes:     []int{200},
 	})
 	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
@@ -245,4 +281,100 @@ func ListL3Agents(c *gophercloud.ServiceClient, id string) (result pagination.Pa
 	return pagination.NewPager(c, listl3AgentsURL(c, id), func(r pagination.PageResult) pagination.Page {
 		return ListL3AgentsPage{pagination.SinglePageBase(r)}
 	})
+}
+
+// AddExternalGatewaysOptsBuilder allows extensions to add additional parameters
+// to the AddExternalGateways request.
+type AddExternalGatewaysOptsBuilder interface {
+	ToRouterAddExternalGatewaysMap() (map[string]any, error)
+}
+
+// AddExternalGatewaysOpts represents the options for adding external gateways
+// to a router.
+type AddExternalGatewaysOpts struct {
+	ExternalGateways []GatewayInfo `json:"external_gateways" required:"true"`
+}
+
+// ToRouterAddExternalGatewaysMap builds a request body from AddExternalGatewaysOpts.
+func (opts AddExternalGatewaysOpts) ToRouterAddExternalGatewaysMap() (map[string]any, error) {
+	return gophercloud.BuildRequestBody(opts, "router")
+}
+
+// AddExternalGateways adds external gateways to a router.
+// This requires the external-gateway-multihoming extension.
+func AddExternalGateways(ctx context.Context, c *gophercloud.ServiceClient, id string, opts AddExternalGatewaysOptsBuilder) (r UpdateResult) {
+	b, err := opts.ToRouterAddExternalGatewaysMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+	resp, err := c.Put(ctx, addExternalGatewaysURL(c, id), b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{200},
+	})
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+	return
+}
+
+// UpdateExternalGatewaysOptsBuilder allows extensions to add additional
+// parameters to the UpdateExternalGateways request.
+type UpdateExternalGatewaysOptsBuilder interface {
+	ToRouterUpdateExternalGatewaysMap() (map[string]any, error)
+}
+
+// UpdateExternalGatewaysOpts represents the options for updating external
+// gateways of a router.
+type UpdateExternalGatewaysOpts struct {
+	ExternalGateways []GatewayInfo `json:"external_gateways" required:"true"`
+}
+
+// ToRouterUpdateExternalGatewaysMap builds a request body from UpdateExternalGatewaysOpts.
+func (opts UpdateExternalGatewaysOpts) ToRouterUpdateExternalGatewaysMap() (map[string]any, error) {
+	return gophercloud.BuildRequestBody(opts, "router")
+}
+
+// UpdateExternalGateways updates external gateways of a router.
+// This requires the external-gateway-multihoming extension.
+func UpdateExternalGateways(ctx context.Context, c *gophercloud.ServiceClient, id string, opts UpdateExternalGatewaysOptsBuilder) (r UpdateResult) {
+	b, err := opts.ToRouterUpdateExternalGatewaysMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+	resp, err := c.Put(ctx, updateExternalGatewaysURL(c, id), b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{200},
+	})
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+	return
+}
+
+// RemoveExternalGatewaysOptsBuilder allows extensions to add additional
+// parameters to the RemoveExternalGateways request.
+type RemoveExternalGatewaysOptsBuilder interface {
+	ToRouterRemoveExternalGatewaysMap() (map[string]any, error)
+}
+
+// RemoveExternalGatewaysOpts represents the options for removing external
+// gateways from a router.
+type RemoveExternalGatewaysOpts struct {
+	ExternalGateways []GatewayInfo `json:"external_gateways" required:"true"`
+}
+
+// ToRouterRemoveExternalGatewaysMap builds a request body from RemoveExternalGatewaysOpts.
+func (opts RemoveExternalGatewaysOpts) ToRouterRemoveExternalGatewaysMap() (map[string]any, error) {
+	return gophercloud.BuildRequestBody(opts, "router")
+}
+
+// RemoveExternalGateways removes external gateways from a router.
+// This requires the external-gateway-multihoming extension.
+func RemoveExternalGateways(ctx context.Context, c *gophercloud.ServiceClient, id string, opts RemoveExternalGatewaysOptsBuilder) (r UpdateResult) {
+	b, err := opts.ToRouterRemoveExternalGatewaysMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+	resp, err := c.Put(ctx, removeExternalGatewaysURL(c, id), b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{200},
+	})
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+	return
 }

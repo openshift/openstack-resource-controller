@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,13 +19,59 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/k-orc/openstack-resource-controller/pkg/clients/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/k-orc/openstack-resource-controller/v2/pkg/clients/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// AddressScopes returns a AddressScopeInformer.
+	AddressScopes() AddressScopeInformer
+	// ApplicationCredentials returns a ApplicationCredentialInformer.
+	ApplicationCredentials() ApplicationCredentialInformer
+	// Domains returns a DomainInformer.
+	Domains() DomainInformer
+	// Endpoints returns a EndpointInformer.
+	Endpoints() EndpointInformer
+	// Flavors returns a FlavorInformer.
+	Flavors() FlavorInformer
+	// FloatingIPs returns a FloatingIPInformer.
+	FloatingIPs() FloatingIPInformer
+	// Groups returns a GroupInformer.
+	Groups() GroupInformer
 	// Images returns a ImageInformer.
 	Images() ImageInformer
+	// KeyPairs returns a KeyPairInformer.
+	KeyPairs() KeyPairInformer
+	// Networks returns a NetworkInformer.
+	Networks() NetworkInformer
+	// Ports returns a PortInformer.
+	Ports() PortInformer
+	// Projects returns a ProjectInformer.
+	Projects() ProjectInformer
+	// Roles returns a RoleInformer.
+	Roles() RoleInformer
+	// Routers returns a RouterInformer.
+	Routers() RouterInformer
+	// RouterInterfaces returns a RouterInterfaceInformer.
+	RouterInterfaces() RouterInterfaceInformer
+	// SecurityGroups returns a SecurityGroupInformer.
+	SecurityGroups() SecurityGroupInformer
+	// Servers returns a ServerInformer.
+	Servers() ServerInformer
+	// ServerGroups returns a ServerGroupInformer.
+	ServerGroups() ServerGroupInformer
+	// Services returns a ServiceInformer.
+	Services() ServiceInformer
+	// Subnets returns a SubnetInformer.
+	Subnets() SubnetInformer
+	// Trunks returns a TrunkInformer.
+	Trunks() TrunkInformer
+	// Users returns a UserInformer.
+	Users() UserInformer
+	// Volumes returns a VolumeInformer.
+	Volumes() VolumeInformer
+	// VolumeTypes returns a VolumeTypeInformer.
+	VolumeTypes() VolumeTypeInformer
 }
 
 type version struct {
@@ -39,7 +85,122 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// AddressScopes returns a AddressScopeInformer.
+func (v *version) AddressScopes() AddressScopeInformer {
+	return &addressScopeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ApplicationCredentials returns a ApplicationCredentialInformer.
+func (v *version) ApplicationCredentials() ApplicationCredentialInformer {
+	return &applicationCredentialInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Domains returns a DomainInformer.
+func (v *version) Domains() DomainInformer {
+	return &domainInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Endpoints returns a EndpointInformer.
+func (v *version) Endpoints() EndpointInformer {
+	return &endpointInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Flavors returns a FlavorInformer.
+func (v *version) Flavors() FlavorInformer {
+	return &flavorInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// FloatingIPs returns a FloatingIPInformer.
+func (v *version) FloatingIPs() FloatingIPInformer {
+	return &floatingIPInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Groups returns a GroupInformer.
+func (v *version) Groups() GroupInformer {
+	return &groupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // Images returns a ImageInformer.
 func (v *version) Images() ImageInformer {
 	return &imageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// KeyPairs returns a KeyPairInformer.
+func (v *version) KeyPairs() KeyPairInformer {
+	return &keyPairInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Networks returns a NetworkInformer.
+func (v *version) Networks() NetworkInformer {
+	return &networkInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Ports returns a PortInformer.
+func (v *version) Ports() PortInformer {
+	return &portInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Projects returns a ProjectInformer.
+func (v *version) Projects() ProjectInformer {
+	return &projectInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Roles returns a RoleInformer.
+func (v *version) Roles() RoleInformer {
+	return &roleInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Routers returns a RouterInformer.
+func (v *version) Routers() RouterInformer {
+	return &routerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// RouterInterfaces returns a RouterInterfaceInformer.
+func (v *version) RouterInterfaces() RouterInterfaceInformer {
+	return &routerInterfaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// SecurityGroups returns a SecurityGroupInformer.
+func (v *version) SecurityGroups() SecurityGroupInformer {
+	return &securityGroupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Servers returns a ServerInformer.
+func (v *version) Servers() ServerInformer {
+	return &serverInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServerGroups returns a ServerGroupInformer.
+func (v *version) ServerGroups() ServerGroupInformer {
+	return &serverGroupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Services returns a ServiceInformer.
+func (v *version) Services() ServiceInformer {
+	return &serviceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Subnets returns a SubnetInformer.
+func (v *version) Subnets() SubnetInformer {
+	return &subnetInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Trunks returns a TrunkInformer.
+func (v *version) Trunks() TrunkInformer {
+	return &trunkInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Users returns a UserInformer.
+func (v *version) Users() UserInformer {
+	return &userInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Volumes returns a VolumeInformer.
+func (v *version) Volumes() VolumeInformer {
+	return &volumeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// VolumeTypes returns a VolumeTypeInformer.
+func (v *version) VolumeTypes() VolumeTypeInformer {
+	return &volumeTypeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

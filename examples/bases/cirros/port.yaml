@@ -1,0 +1,19 @@
+---
+apiVersion: openstack.k-orc.cloud/v1alpha1
+kind: Port
+metadata:
+  name: port
+spec:
+  cloudCredentialsRef:
+    cloudName: openstack
+    secretName: cloud-config
+  managementPolicy: managed
+  resource:
+    networkRef: network
+    tags:
+    - orc-test
+    securityGroupRefs:
+    - allow-ssh
+    - default
+    addresses:
+    - subnetRef: subnet

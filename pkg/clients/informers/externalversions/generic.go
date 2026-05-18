@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The ORC Authors.
+Copyright The ORC Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ limitations under the License.
 package externalversions
 
 import (
-	"fmt"
+	fmt "fmt"
 
-	v1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
+	v1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -53,8 +53,54 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=openstack.k-orc.cloud, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("addressscopes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().AddressScopes().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("applicationcredentials"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().ApplicationCredentials().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("domains"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Domains().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("endpoints"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Endpoints().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("flavors"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Flavors().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("floatingips"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().FloatingIPs().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("groups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Groups().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("images"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Images().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("keypairs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().KeyPairs().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("networks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Networks().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("ports"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Ports().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("projects"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Projects().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("roles"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Roles().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("routers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Routers().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("routerinterfaces"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().RouterInterfaces().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("securitygroups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().SecurityGroups().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("servers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Servers().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("servergroups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().ServerGroups().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("services"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Services().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("subnets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Subnets().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("trunks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Trunks().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("users"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Users().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("volumes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().Volumes().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("volumetypes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Openstack().V1alpha1().VolumeTypes().Informer()}, nil
 
 	}
 

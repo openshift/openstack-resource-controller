@@ -37,14 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/api/v1alpha1"
-	clients "github.com/k-orc/openstack-resource-controller/internal/osclients"
-	"github.com/k-orc/openstack-resource-controller/internal/version"
-)
-
-const (
-	CloudsSecretKey = "clouds.yaml"
-	CASecretKey     = "cacert"
+	orcv1alpha1 "github.com/k-orc/openstack-resource-controller/v2/api/v1alpha1"
+	clients "github.com/k-orc/openstack-resource-controller/v2/internal/osclients"
+	"github.com/k-orc/openstack-resource-controller/v2/internal/version"
 )
 
 type providerScopeFactory struct {
@@ -142,6 +137,14 @@ func NewCachedProviderScope(cache *cache.LRUExpireCache, cloud clientconfig.Clou
 	return scope, nil
 }
 
+func (s *providerScope) NewAddressScopeClient() (clients.AddressScopeClient, error) {
+	return clients.NewAddressScopeClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewApplicationCredentialClient() (clients.ApplicationCredentialClient, error) {
+	return clients.NewApplicationCredentialClient(s.providerClient, s.providerClientOpts)
+}
+
 func (s *providerScope) NewComputeClient() (clients.ComputeClient, error) {
 	return clients.NewComputeClient(s.providerClient, s.providerClientOpts)
 }
@@ -150,16 +153,48 @@ func (s *providerScope) NewNetworkClient() (clients.NetworkClient, error) {
 	return clients.NewNetworkClient(s.providerClient, s.providerClientOpts)
 }
 
-func (s *providerScope) NewVolumeClient() (clients.VolumeClient, error) {
-	return clients.NewVolumeClient(s.providerClient, s.providerClientOpts)
-}
-
 func (s *providerScope) NewImageClient() (clients.ImageClient, error) {
 	return clients.NewImageClient(s.providerClient, s.providerClientOpts)
 }
 
-func (s *providerScope) NewLbClient() (clients.LbClient, error) {
-	return clients.NewLbClient(s.providerClient, s.providerClientOpts)
+func (s *providerScope) NewIdentityClient() (clients.IdentityClient, error) {
+	return clients.NewIdentityClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewUserClient() (clients.UserClient, error) {
+	return clients.NewUserClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewVolumeClient() (clients.VolumeClient, error) {
+	return clients.NewVolumeClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewVolumeTypeClient() (clients.VolumeTypeClient, error) {
+	return clients.NewVolumeTypeClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewDomainClient() (clients.DomainClient, error) {
+	return clients.NewDomainClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewServiceClient() (clients.ServiceClient, error) {
+	return clients.NewServiceClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewEndpointClient() (clients.EndpointClient, error) {
+	return clients.NewEndpointClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewKeyPairClient() (clients.KeyPairClient, error) {
+	return clients.NewKeyPairClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewGroupClient() (clients.GroupClient, error) {
+	return clients.NewGroupClient(s.providerClient, s.providerClientOpts)
+}
+
+func (s *providerScope) NewRoleClient() (clients.RoleClient, error) {
+	return clients.NewRoleClient(s.providerClient, s.providerClientOpts)
 }
 
 func (s *providerScope) ExtractToken() (*tokens.Token, error) {
@@ -167,6 +202,12 @@ func (s *providerScope) ExtractToken() (*tokens.Token, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create new identity service client: %w", err)
 	}
+
+	// allows to validate a token derived from application credentials
+	client.MoreHeaders = map[string]string{
+		"OpenStack-Identity-Access-Rules": "1.0",
+	}
+
 	return tokens.Get(context.TODO(), client, s.providerClient.Token()).ExtractToken()
 }
 
@@ -215,7 +256,9 @@ func NewProviderClient(cloud clientconfig.Cloud, caCert []byte, logger logr.Logg
 		}
 	}
 
-	provider.HTTPClient.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment, TLSClientConfig: config}
+	provider.HTTPClient.Transport = &RoundTripper{
+		RoundTripper: &http.Transport{Proxy: http.ProxyFromEnvironment, TLSClientConfig: config},
+	}
 	if klog.V(6).Enabled() {
 		provider.HTTPClient.Transport = &osclient.RoundTripper{
 			Rt:     provider.HTTPClient.Transport,
@@ -239,8 +282,6 @@ func (g gophercloudLogger) Printf(format string, args ...interface{}) {
 	g.logger.Info(fmt.Sprintf(format, args...))
 }
 
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
-
 // getCloudFromSecret extract a Cloud from the given namespace:secretName.
 func getCloudFromSecret(ctx context.Context, ctrlClient client.Client, secretNamespace string, secretName string, cloudName string) (clientconfig.Cloud, []byte, error) {
 	emptyCloud := clientconfig.Cloud{}
@@ -262,21 +303,26 @@ func getCloudFromSecret(ctx context.Context, ctrlClient client.Client, secretNam
 		return emptyCloud, nil, err
 	}
 
-	content, ok := secret.Data[CloudsSecretKey]
+	content, ok := secret.Data[orcv1alpha1.CloudCredentialsConfigSecretKey]
 	if !ok {
 		return emptyCloud, nil, fmt.Errorf("OpenStack credentials secret %v did not contain key %v",
-			secretName, CloudsSecretKey)
+			secretName, orcv1alpha1.CloudCredentialsConfigSecretKey)
 	}
 	var clouds clientconfig.Clouds
 	if err = yaml.Unmarshal(content, &clouds); err != nil {
 		return emptyCloud, nil, fmt.Errorf("failed to unmarshal clouds credentials stored in secret %v: %v", secretName, err)
 	}
 
-	// get caCert
-	caCert, ok := secret.Data[CASecretKey]
+	cloudsYaml, ok := clouds.Clouds[cloudName]
 	if !ok {
-		return clouds.Clouds[cloudName], nil, nil
+		return emptyCloud, nil, fmt.Errorf("no cloud named: %v, in the provided config", cloudName)
 	}
 
-	return clouds.Clouds[cloudName], caCert, nil
+	// get caCert
+	caCert, ok := secret.Data[orcv1alpha1.CloudCredencialsCASecretKey]
+	if !ok {
+		return cloudsYaml, nil, nil
+	}
+
+	return cloudsYaml, caCert, nil
 }
