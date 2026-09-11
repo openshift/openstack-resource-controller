@@ -91,8 +91,8 @@ require (
 	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/term v0.39.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
 	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
@@ -114,3 +114,5 @@ require (
 )
 
 replace github.com/gophercloud/gophercloud/v2 => github.com/gophercloud/gophercloud/v2 v2.3.1-0.20241210154048-e3bceeff054e
+
+replace golang.org/x/net => github.com/openshift-sustaining/net v0.50.0-sec.3
