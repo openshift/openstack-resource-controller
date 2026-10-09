@@ -2,12 +2,12 @@
 
 aliases:
   openstack-approvers:
-    - dkokkino
     - gryf
     - mandre
     - stephenfin
   openstack-reviewers:
-    - dkokkino
+    - dlaw4608
+    - eshulman2
     - gryf
     - mandre
     - stephenfin
