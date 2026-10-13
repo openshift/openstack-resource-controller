@@ -1,0 +1,69 @@
+name: e2e
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Run acceptance tests against OpenStack ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "flamingo"
+            openstack_version: "stable/2025.2"
+            ubuntu_version: "24.04"
+          - name: "epoxy"
+            openstack_version: "stable/2025.1"
+            ubuntu_version: "24.04"
+          - name: "dalmatian"
+            openstack_version: "stable/2024.2"
+            ubuntu_version: "22.04"
+    env:
+      image_tag: virtual-registry.k-orc.cloud/ci:commit-${GITHUB_SHA::7}
+
+    runs-on: ubuntu-${{ matrix.ubuntu_version }}
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Deploy devstack
+      uses: EmilienM/devstack-action@60ca1042045c0c9e3e001c64575d381654ffcba1
+      with:
+        enable_workaround_docker_io: 'false'
+        branch: ${{ matrix.openstack_version }}
+        enabled_services: "openstack-cli-server"
+
+    - name: Deploy a Kind Cluster
+      uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc
+      with:
+        cluster_name: orc
+
+    - name: Build and push a container image to Kind
+      run: |
+        make docker-build IMG=${{ env.image_tag }}
+        kind load docker-image ${{ env.image_tag }} ${{ env.image_tag }} --name orc
+
+    - name: Deploy orc
+      run: |
+        kubectl config use-context kind-orc
+        make deploy IMG=${{ env.image_tag }}
+
+    - name: Run e2e tests
+      run: make test-e2e
+
+    - name: Generate logs on failure
+      run: ./hack/collectlogs
+      if: failure()
+      env:
+        OS_CLOUD: devstack
+
+    - name: Upload logs artifacts on failure
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: e2e-${{ matrix.name }}-${{ github.run_id }}
+        path: /tmp/artifacts/*

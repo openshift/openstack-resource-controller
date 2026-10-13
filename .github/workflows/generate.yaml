@@ -1,0 +1,19 @@
+on:
+  push:
+    branches:
+    - release-1.0
+  pull_request:
+name: generate
+permissions:
+  contents: read
+
+jobs:
+  make-generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: |
+          make generate
+          git diff --exit-code
